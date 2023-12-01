@@ -1,0 +1,29 @@
+! Blackbox Pure Black Theme
+
+rootCommand:      xsetroot -solid black
+
+! Window Style
+window.title.focus.color:         black
+window.title.unfocus.color:       black
+window.label.focus.color:         white
+window.label.unfocus.color:       gray
+window.handle.focus.color:        black
+window.handle.unfocus.color:      black
+window.grip.focus.color:          black
+window.grip.unfocus.color:        black
+window.button.focus.color:        black
+window.button.unfocus.color:      black
+
+! Menu Style
+menu.title.color:                 black
+menu.frame.color:                 black
+menu.title.textColor:             white
+menu.item.textColor:              gray
+menu.bullet.color:                white
+menu.selected.color:              #222222
+menu.selected.textColor:          white
+
+! Text fonts
+window.font:                      -*-fixed-*-*-*-*-10-*
+menu.title.font:                  -*-fixed-*-*-*-*-10-*
+menu.frame.font:                  -*-fixed-*-*-*-*-10-*

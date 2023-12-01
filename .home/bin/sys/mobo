@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+if type system_profiler &>/dev/null; then
+  system_profiler SPHardwareDataType | grep "Model Identifier" | $awk '{print $3}'
+elif type wmic &>/dev/null; then wmic baseboard get product,Manufacturer
+elif type dmidecode &>/dev/null; then
+  sudo dmidecode -s system-product-name 2>/dev/null \
+    | $sed "s/To Be Filled By O.E.M./Potato $((1000+`date +%Y`))/g"
+fi

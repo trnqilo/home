@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ -t 0 ]]; then output="$@"; echo "$output"
+else
+  while read line; do echo "$line"
+    if [[ "$output" ]]; then output+=$'\n'"$line"
+    else output="$line"; fi
+  done
+fi
+
+if type pbcopy &>/dev/null; then pbcopy<<<"$output"
+elif type clip &>/dev/null; then clip<<<"$output"
+elif type xclip &>/dev/null; then xclip<<<"$output"; fi
