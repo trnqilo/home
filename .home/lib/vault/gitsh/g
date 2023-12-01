@@ -1,0 +1,88 @@
+alias gs='git status' gsa='gs --ignored' gup='git pull --rebase' gcia='git add -A; gcim' gco='git checkout'
+
+export GIT_PS1_SHOWDIRTYSTATE=true
+
+function gcim { local message="$@"; git commit -m "$message"; }
+
+function gbr { local regex="$@"; git branch -a | grep --color=always -iE "${regex:-'.*'}"; }
+
+function gp { local args=
+  if [[ "$1" == '-f' ]]; then args+='--force-with-lease --force-if-includes'
+  elif [[ "$1" == '-ff' ]]; then args+='--force'; fi
+  if [[ "$args" ]]; then echo $args; fi
+  git push origin HEAD $args -u
+}
+
+function g {
+  if [[ "$1" == 'p' ]]; then shift; gp "$@"
+  elif [[ "$1" == 'conf' ]]; then shift; _gitconf_$@
+  elif [[ "$1" == 'br' ]]; then shift; git branch "$@"
+  elif [[ "$1" == 'ci' ]]; then shift; git commit "$@"
+  elif [[ "$1" == 'cim' ]]; then shift; gcim "$@"
+  elif [[ "$1" == 'cia' ]]; then shift; git add -A; gcim "$@"
+  elif [[ "$1" == 'co' ]]; then shift; git checkout "$@"
+  elif [[ "$1" == 'pu' ]]; then shift; git pull "$@"
+  elif [[ "$1" == 'rev' ]]; then shift; git rev-parse --abbrev-ref HEAD
+  elif [[ "$1" == 'remo' ]]; then shift; git remote -v
+  elif [[ "$1" == 'reb' ]]; then shift; git rebase "$@"
+  elif [[ "$1" == 'sha' ]]; then shift; git rev-parse HEAD
+  elif [[ "$1" == 'sa' ]]; then shift; git status --ignored "$@"
+  elif [[ "$1" == 'up' ]]; then shift; git pull --rebase "$@"
+  elif [[ "$1" == 'del' ]]; then echo "g br -D ${2:-br_name} & g push origin --delete ${2:-br_name}"
+  elif [[ "$1" ]]; then git "$@"
+  else git fetch && git status; fi
+ }; __git_complete g __git_main
+
+function _gitconf_init {
+
+if [[ -f "$HOME/.gitconfig" ]]; then
+  surely sure 'overwrite exiting gitconfig' || exit
+  user_conf="`grep -E -A2 '[user]' "$HOME/.gitconfig"`"
+  name="`echo "$user_conf" | grep 'name =' | $awk '{$1=$2=""; print $0}' | $awk '{$1=$1};1' | head -1`"
+  email="`echo "$user_conf" | grep 'email =' | $awk '{print $3}' | $awk '{$1=$1};1' | head -1`"
+fi
+
+read -ep 'name = ' -i "$name" name
+read -ep 'email = ' -i "$email" email
+
+[[ ! "$name" || ! "$email" ]] && echo 'enter your name and email.' && exit 1
+
+echo "[user]
+  name = $name
+  email = $email
+[core]
+  autocrlf = input
+  editor = vim
+[alias]
+  aa = add -A
+  bare = init --bare
+  br = branch
+  brr = branch -a
+  ci = commit
+  co = checkout
+  dif = diff --color-words
+  fe = fetch
+  forces = push origin HEAD --force-with-lease --force-if-includes -u
+  graph = log --all --graph --decorate --oneline
+  po = push origin HEAD -u
+  patch = apply --ignore-space-change --ignore-whitespace --whitespace=fix --reject
+  pu = pull
+  rev = rev-parse --abbrev-ref HEAD
+  remo = remote -v
+  reb = rebase
+  sha = rev-parse HEAD
+  shas = reflog
+  s = status
+  st = status
+  up = pull --rebase
+[color]
+  ui = always
+[pull]
+  ff = only
+[init]
+  defaultBranch = main
+[rerere]
+  enabled = true
+" > "$HOME/.gitconfig"
+}
+function _gitconf_ { $bat "$HOME/.gitconfig"; }

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+# surely stash "$@"
+# [[ "$1" ]] && stash="$1" && shift && parrot cyan "stashing ${stash}..." || exit
+
+# cd "${STASH_ROOT:-.}"
+# mkdir -p "$stash"
+
+# if [[ "$1" == 'pop' ]]; then
+#   mv "$stash"/* .
+# else
+#   while [[ "$1" ]]; do
+#     if [[ -d "$stash/$1" ]]; then parrot yellow "$1 already stashed"
+#     else mv "$1" "$stash" || parrot red "$1 stash failed"; fi
+#     shift
+#   done
+# fi
