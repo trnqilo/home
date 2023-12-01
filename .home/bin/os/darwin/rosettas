@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+function _rosettas_install { surely install rosetta && softwareupdate --install-rosetta; }
+
+# function _rosettas_stop {
+#   if pgrep -x "oahd" > /dev/null; then
+#     echo 'stopping rosetta...'
+#     sudo pkill -9 -f 'rosetta'
+#     sudo pkill -9 -x 'oahd'
+#   fi # sudo /usr/libexec/oah/oahd & 2>/dev/null
+#   echo 'rosetta stopped.'
+# }
+
+function _rosettas_ {
+  if ls /Library/Apple/System/Library/Receipts | grep -i 'rosetta' &>/dev/null; then
+    pgrep oahd && echo 'rosetta is running.' || echo 'rosetta stopped.'
+  else
+    echo 'rosetta not installed.'
+  fi
+}
+
+"_rosettas_${1}"

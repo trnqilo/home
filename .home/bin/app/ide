@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+
+proj_dir="${1:-.}"
+if ! cd "$proj_dir" &>/dev/null; then echo "not a project: $proj_dir"; exit; fi
+proj_dir="`pwd`"
+if [[ "$proj_dir" == "$PROJECTS/"* ]]; then echo "opening $proj_dir..."
+elif [[ "$proj_dir" == "$HOME/"* ]]; then surely sure "open $proj_dir"
+else surely "open $proj_dir"; surely really; fi
+
+if   ls ./*/*/main/AndroidManifest.xml > /dev/null 2>&1; then ide='studio'
+elif ls ./*.uproject > /dev/null 2>&1; then ide='rider'
+elif ls ./Cargo.toml > /dev/null 2>&1; then ide='rustrover'
+elif ls ./Package.swift > /dev/null 2>&1; then ide='xcopen'
+elif ls ./*.xcodeproj > /dev/null 2>&1; then ide='xcopen'
+elif ls ./*.xcworkspace > /dev/null 2>&1; then ide='xcopen'
+elif ls ./package.json > /dev/null 2>&1; then ide='idea'
+elif ls ./pubspec.yaml > /dev/null 2>&1; then ide='idea'
+elif ls ./*.sln > /dev/null 2>&1; then ide='start devenv'; fi
+ide="${ide:-idea}"
+
+if type "$ide" &>/dev/null; then
+  $ide . > /dev/null 2>&1 &
+else
+  echo "not found: $ide"
+fi
