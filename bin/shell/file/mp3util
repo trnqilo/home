@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -e
+
+function transcode {
+  if [[ -e "$output" ]]; then error "skip existing: $output"
+  elif ! mkdir -p -- "$outdir"; then error "mkdir fail: $outdir"
+  else
+    ffmpeg -hide_banner -nostdin -y -i "$file" -map 0:a:0 -vn -c:a libmp3lame -q:a 2 "$output" \
+      || error "ffmpeg fail: $output"
+  fi
+}
+
+function validate {
+  if ! has_audio "$file"; then error "no audio: $file"; fi
+  if is_encrypted "$file"; then error "encrypted: $file"; fi
+  if [[ ! -e "$output" ]]; then error "missing: $output"; fi
+}
+
+function non_audio_files {
+  while IFS= read -r -d '' file; do
+    if ! has_audio "$file"; then ${do:-echo non-audio:} "$file"
+    elif is_encrypted "$file"; then ${do:-echo encrypted:} "$file"; fi
+  done < <(find "${1:-.}" -type f -print0)
+}
+
+function has_audio {
+  ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$1" 2>/dev/null \
+    | head -n1 | grep -q .
+}
+
+function is_encrypted {
+  ffprobe -v error -show_entries stream=enc_key_id -of csv=p=0 "$1" \
+    | grep -q .
+}
+
+function error { errors+=$'\n'"$@"; }; errors=
+
+function errors { if [[ "$errors" ]]; then echo -e "$errors" | parrot red; fi; }
+
+function m4a2mp3 {
+  if ! type ffmpeg &>/dev/null; then echo 'ffmpeg is not installed.'; exit; fi
+
+  if [[ "$3" ]]; then prefix="$3 - "; else prefix=; fi
+  if [[ "$2" ]]; then target="`realpath "$2"`"; fi
+  if [[ "$1" ]]; then cd "$1"; fi
+
+  for m4a in *.m4a; do
+    mp3="${target:-.}/${prefix}${m4a%.m4a}.mp3"
+    if [[ -f "$mp3" ]]; then error "$mp3 exists"
+    else ffmpeg -i "$m4a" -codec:a libmp3lame -q:a 2 "$mp3"; fi
+  done
+  errors
+}
+
+if ! type ffmpeg &>/dev/null; then echo 'ffmpeg is not installed.'; exit; fi
+
+if [[ "$1" == 'non' ]]; then shift; non_audio_files "$@"; exit
+elif [[ "$1" == 'm2m' ]]; then shift; m4a2mp3 "$@"; exit
+elif [[ ! -d "$1" || ! -d "$2" || "`realpath $1`" == "`realpath $2`" ]]; then
+  echo 'usage: mp3util source dest [prefix]'; exit
+fi
+
+if [[ "$3" ]]; then prefix="$3 - "; else prefix=; fi
+if [[ "$2" ]]; then target="`realpath "$2"`"; fi
+if [[ "$1" ]]; then cd "$1"; fi
+
+surely "convert all audio in `pwd` to mp3 in $target"
+
+while IFS= read -r -d '' rel; do
+  file="./$rel"
+  subdir="$(dirname -- "$rel")"
+  [[ "$subdir" == "." ]] && subdir=""
+  outdir="${target%/}/${subdir}"
+  song="$(basename -- "$rel")"
+  output="${outdir}/${prefix}${song%.*}.mp3"
+  if [[ "$validate" == true ]]; then validate
+  else transcode; fi
+done < <(
+  find . -type f \
+    \( -iname "*.m4a" -o -iname "*.wav" -o -iname "*.mp3" \) \
+    -printf '%P\0'
+)
+errors

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [[ "$2" ]]; then hex="$1" factor="$2"; else exit 1; fi
+(r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+dr=$(printf "%02x" $(echo "$r*$factor" | bc | awk '{printf "%d", $1}'))
+dg=$(printf "%02x" $(echo "$g*$factor" | bc | awk '{printf "%d", $1}'))
+db=$(printf "%02x" $(echo "$b*$factor" | bc | awk '{printf "%d", $1}'))
+echo "$dr$dg$db")2>/dev/null
