@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+[[ "$1" ]] && version="$1" || version='26'
+wget "https://download.developer.apple.com/Developer_Tools/Xcode_$version/Xcode_$version.xip"
+# $sudo xip -x Xcode_$version.xip
