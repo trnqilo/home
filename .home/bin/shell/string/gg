@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+regex="$1" && shift ||:
+grep --color=always -iE "${regex:-.*}" "$@"

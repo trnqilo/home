@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+function hashmap {
+  [[ ! "$1" ]] && echo 'eg. hashmap $map_name' && return 1 || local name="$1"
+  [[ "$codegen" ]] || local codegen=eval
+  $codegen "`__build_hashmap $name`"
+}
+
+function __build_hashmap {
+    sed "s/__NAME__/$1/g" <<< '
+function __NAME__.get { [[ "$1" ]] || return; local key_name="$1"; shift; local get_value="____NAME__`echo "$key_name" | md5sum | gawk '\''{print $1}'\''`"; echo ${!get_value} | base64 -d; }
+function __NAME__.set { [[ "$1" ]] || return; local key_name="$1"; shift; local get_value="____NAME__`echo "$key_name" | md5sum | gawk '\''{print $1}'\''`"; [[ "$1" ]] || return
+  local value_encoded="`echo "$@" | base64`"
+  eval "$get_value='\''$value_encoded'\''"
+  __keys___NAME__+=("$key_name")
+}
+function __NAME__.unset { [[ "$1" ]] || return; local key_name="$1"; shift; local get_value="____NAME__`echo "$key_name" | md5sum | gawk '\''{print $1}'\''`"; unset $get_value
+  local index; for index in "${!__keys___NAME__[@]}"; do
+    [[ "${__keys___NAME__[$index]}" == "$key_name" ]] && unset __keys___NAME__[$index] && break
+  done
+}
+function __NAME__.discard {
+  unset -f __NAME__.set __NAME__.get __NAME__.unset __NAME__.discard __NAME__.keys
+  local index; for index in "${!__keys___NAME__[@]}"; do unset "____NAME__`echo ${__keys___NAME__[$index]} | md5sum | gawk '\''{print $1}'\''`"; done
+  unset __keys___NAME__
+}
+function __NAME__.keys { local index; for index in "${!__keys___NAME__[@]}"; do echo "${__keys___NAME__[$index]}"; done; }
+'
+}
+
+function _hashmap_test {
+  local map='test_map' \
+    key='this is a key name' \
+    value='this is a value' \
+    fail='' i= \
+    max=${1:-'40'}
+
+  hashmap $map
+
+  i=0; while (( i < max )); do let ++i
+    $map.set "$key $i" "$value $i"
+  done
+
+  i=0; while (( i < max )); do let ++i
+    actual_value="`$map.get "$key $i"`"
+    [[ "$actual_value" != "$value $i" ]] \
+      && fail+='get: unexpected data.' \
+      && break
+  done
+
+  actual_keys="`$map.keys`"
+  i=0; while (( i < max )); do let ++i
+    [[ "`echo "$actual_keys" | head -$i | tail -1`" != "$key $i" ]] \
+      && fail+='keys: unexpected data.' \
+      && break
+  done
+
+  i=0; while (( i < max )); do let ++i
+    $map.unset "$key $i"
+  done
+  [[ "`$map.keys`" ]] && fail+='unset: keys still present.'
+
+  i=0; while (( i < max )); do let ++i
+    actual_value="`$map.get "$key $i"`"
+    [[ "$actual_value" ]] \
+      && fail+='unset: values still present.' \
+      && break
+  done
+
+  $map.discard
+
+  [[ "`declare -F | $awk '{print $3}' | grep $map`" ]] \
+    && fail+='discard: hashmap functions remain.'
+
+  [[ "`declare -p | grep "$map.*=" | $awk '{print $3}' | $awk -F= '{print $1}'`" ]] \
+    && fail+='discard: hashmap variables remain.'
+
+  [[ "$fail" ]] && echo ${fail//'.'/'. '} \
+    || echo 'passed!'
+}
