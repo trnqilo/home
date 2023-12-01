@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+if type free &>/dev/null; then
+  free -h | grep Mem | $awk '{print $2" total, "$7" free, "$3" used"}' \
+    | $sed 's/i//g'
+elif type memory_pressure &>/dev/null; then
+  pressure="`memory_pressure`"
+  free=`tail -1 <<< "$pressure" | $awk '{print 8*$5/100}'`
+  total=`head -1 <<< "$pressure" | $awk '{print $4/1073741824}'`
+  used=`$awk '{print $1-$2}' <<< "$total $free"`
+  echo "${total}G total, ${free}G free, ${used}G used"
+fi
