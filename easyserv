@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'init' ]]; then shift
+  server="$@"; server=${server:-'server.json'}
+  if [[ -f "$server" ]]; then echo "$server already present"
+  else echo '{ "port": 1234, "apis": [{ "route": "/", "response": "ciao" }] }' > "$server"; fi
+  exit
+fi
+
+if [[ "$1" ]]; then config="$1"
+elif test -f server.json; then config=server.json; fi
+if [[ "$config" ]]; then config="`realpath "$config"`"; fi
+
+cd "`dirname $0`"
+
+[[ -d 'node_modules' ]] || npm i
+npm start -- "$config"
