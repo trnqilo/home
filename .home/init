@@ -1,0 +1,18 @@
+"$SHELL" -c 'cd
+  ls -d .git.home || mv .git .git.home
+  mv "$HOME/readme" "$HOME/.home" ||:
+  mv "$HOME/license" "$HOME/.home" ||:
+' > /dev/null 2>&1
+if [[ "$BASH_VERSION" ]]; then touch "$HOME/.bashrc" "$HOME/.bash_profile"
+  grep -q 'source "$HOME/\.home/bashrc"' "$HOME/.bashrc" \
+    || echo 'source "$HOME/.home/bashrc"' >> "$HOME/.bashrc"
+  grep -q 'source "$HOME/\.home/bashrc"' "$HOME/.bash_profile" \
+    || echo 'source "$HOME/.home/bashrc"' >> "$HOME/.bash_profile"
+  source "$HOME/.bashrc"
+elif [[ "$ZSH_VERSION" ]]; then touch "$HOME/.zshrc" "$HOME/.zprofile"
+  grep -q 'source "$HOME/\.home/zshrc"' "$HOME/.zshrc" \
+    || echo 'source "$HOME/.home/zshrc"' >> "$HOME/.zshrc"
+  grep -q 'source "$HOME/\.home/zshrc"' "$HOME/.zprofile" \
+    || echo 'source "$HOME/.home/zshrc"' >> "$HOME/.zprofile"
+  source "$HOME/.zshrc"
+fi
