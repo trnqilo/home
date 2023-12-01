@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+if type code &>/dev/null; then code='code'
+elif type code-oss &>/dev/null; then code='code-oss'
+elif type vim &>/dev/null; then code='vim'
+fi; ${code:-vi} $@

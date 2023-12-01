@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -e
+
+function xsesh_set {
+  _freebsd_xfce() {
+    echo 'source /usr/local/etc/xdg/xfce4/xinitrc' > "$HOME/.xinitrc"
+    sudo pw groupmod video -m "$USER"
+    sudo pw groupmod wheel -m "$USER"
+    sudo sysrc dbus_enable="YES"
+  }
+  _linux_blackbox() { echo 'blackbox' > "$HOME/.xsession"; }
+  _linux_xfce() { echo 'xfce4-session' > "$HOME/.xsession"; }
+  _${whereami}_$@
+}
+
+function xsesh_as {
+  if [[ ! "$1" ]]; then echo 'no user specified.'; exit 1; fi
+
+  _xhost_sudo="sudo su - $1 -c"
+  _xhost_args="SI:localuser:$1"
+  _xhost_block="xhost -$_xhost_args"
+  _xhost_allow="xhost +$_xhost_args"
+  
+  if $_xhost_block && $_xhost_allow && [[ "$2" ]]; then shift
+    $_xhost_sudo "DISPLAY=$DISPLAY $@" > /dev/null ||:
+  else
+    $_xhost_sudo "DISPLAY=$DISPLAY bash -l" ||:
+  fi
+
+  $_xhost_block
+}
+
+xsesh_$@

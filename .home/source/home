@@ -1,0 +1,5 @@
+
+alias up='if type homeup &>/dev/null; then homeup; else homesync; fi;'
+alias home='cod "$DOTHOME";'
+alias holo='mkdir -p "$HOLO" && cod "$HOLO";'
+alias lopro='mkdir -p "$HOME/.local" && cod "$HOME/.local/profile";'

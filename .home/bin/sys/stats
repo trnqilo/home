@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+function linux_stats {
+  grep 'cpu.*MHz' /proc/cpuinfo \
+    | gawk '{print $4/1000.0}' | round 2 \
+    | gawk '{print $1 " GHz"}' && echo ||:
+  if type sensors &>/dev/null; then sensors; fi
+  if type vcgencmd &>/dev/null; then 
+    vcgencmd measure_temp
+    vcgencmd get_throttled
+    vcgencmd measure_volts
+    vcgencmd measure_clock 1
+  fi
+}
+
+function freebsd_stats {
+  kldstat | grep -q coretemp || sudo kldload coretemp
+  sysctl dev.cpu | grep temperature | gawk '{print $2}'
+}
+
+function darwin_stats { sysctl -n hw.ncpu; }
+
+function windows_stats { nvidia-smi | grep 'C   ' | gawk '{print $3}'; }
+
+if [[ ! "$1" ]] ; then
+  "${whereami}_stats"
+else
+  watch -tcn $1 "stats"
+fi	

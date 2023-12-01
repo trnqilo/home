@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ ! "$2" ]]; then exit; fi
+
+if [[ "$1" == 'bright' ]]; then acflag="$1"; shift
+else acflag=''; fi; color="$1"; shift
+
+if [[ "$1" == '-' ]]; then text="`cat`"
+else text="$@"; fi
+
+ansi_color="`ansicode $acflag $color`"
+if [[ "$ansi_color" ]]; then
+  echo -e "\e[0;${ansi_color}${text}\e[0m"
+else
+  if [[ "$color" =~ ^rando?m?$ ]]; then
+    color="$((RANDOM%255));$((RANDOM%255));$((RANDOM%255))"
+  else
+    color="${color//','/';'}"; shift
+  fi
+  echo -e "\x1b[38;2;${color}m${text}\x1b[0m"
+fi

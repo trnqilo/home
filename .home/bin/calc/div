@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! $1 ]] && exit
+
+args="${*}"
+args=($args)
+
+result="`value $1`"
+for (( index=1; index < ${#args[@]}; ++index )); do
+  denominator="${args[index]}"
+  is zero "$denominator" && echo 'infinity' && exit 1
+  result+="/`value $denominator`"
+done
+
+clac "$result"
