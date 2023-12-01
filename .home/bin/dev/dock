@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'wipe' ]]; then
+  surely 'wipe all containers and images' || exit
+  docker stop `docker ps -aq` && docker rm `docker ps -aq` ||:
+  docker rmi -f `docker images -aq` ||:
+  docker system prune -af ||:
+elif [[ "$1" == 'stop' ]] && surely 'stop all containers'; then
+  docker stop `docker ps -aq`
+elif [[ "$1" == 'info' ]]; then
+  docker info && docker images -a && docker ps -a
+elif [[ "$1" =~ ^b(uild)?$ ]]; then [[ "$2" ]] && cd "$2" ||:
+  `grep '^# docker build' Dockerfile | head -1 | $awk '{$1="";print $0}'` # docker build -t my_container .
+elif [[ "$1" =~ ^r(un)?$ ]]; then [[ "$2" ]] && cd "$2" ||:
+  `grep '^# docker run' Dockerfile | head -1 | $awk '{$1="";print $0}'` # docker run -p 2222:22 -it my_container
+elif [[ "$1" == 'go' ]]; then [[ "$2" ]] && cd "$2" ||:
+  `grep '^# docker build' Dockerfile | head -1 | $awk '{$1="";print $0}'` # docker build -t my_container .
+  `grep '^# docker run' Dockerfile | head -1 | $awk '{$1="";print $0}'` # docker run -p 2222:22 -it my_container
+else lazydocker; fi
