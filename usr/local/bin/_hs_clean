@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+function clean_mds {
+  local log_file=/dev/shm/hs/$(date +"%Y-%m-%d").md md=
+  for md in /dev/shm/hs/*.md; do
+    [[ -e "$md" ]] || continue
+    if [[ "$md" != "$log_file" ]]; then
+      sudo rm "$md"
+    fi
+  done
+}
+
+function clean_jpgs {
+  is_older_than_24_hours() {
+    local file_path="$1"
+    [[ -n "$(find "$file_path" -maxdepth 0 -mmin +1440 2>/dev/null)" ]]
+  }
+  local jpg=
+  for jpg in /dev/shm/hs/*.jpg; do
+    [[ -e "$jpg" ]] || continue
+    if is_older_than_24_hours "$jpg"; then
+      sudo rm "$jpg"
+    fi
+  done
+}
+
+clean_mds
+clean_jpgs

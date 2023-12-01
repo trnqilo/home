@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+source /etc/default/housesitter
+if [[ -f "$UPLOAD_SCRIPT" ]]; then "$UPLOAD_SCRIPT" "$@"; fi
+if [[ "$HS_USER" ]]; then
+  if [[ -f "/home/$HS_USER/.home/lib/housesitter/upload/.dropbox_uploader" ]]; then
+    /home/$HS_USER/.home/lib/housesitter/upload/upload "$@"
+  fi
+fi
