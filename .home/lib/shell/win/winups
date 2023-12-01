@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$DOTHOME/win/" ;( printf '$files = @('; (ls *.ps1;ls *.bat -1) | while read item; do printf " \"$item\","; done | sed -z 's/,\s*$//'; echo ' )'; tail -n +9 "$0" ) > homesync.ps1
+exit
+## homesync.ps1
+#!/usr/bin/env powershell -File
+$files = @()
+$destDir = "$HOME\Scripts"
+$localDir = "$destDir\Local"
+$baseRawUrl = "https://raw.githubusercontent.com/trnqilo/home/refs/heads/home/win"
+Write-Host "`n--- Tranquilo ---" -ForegroundColor Yellow
+if (!(Test-Path $destDir)) {
+  New-Item -Path $destDir -ItemType Directory -Force | Out-Null
+  Write-Host "[+] Created $destDir" -ForegroundColor Gray
+}
+if (!(Test-Path $localDir)) {
+  New-Item -Path $localDir -ItemType Directory -Force | Out-Null
+  Write-Host "[+] Created $localDir" -ForegroundColor Gray
+}
+Write-Host "Fetching scripts from '$baseRawUrl'..." -ForegroundColor Cyan
+foreach ($fileName in $files) {
+  $targetPath = Join-Path $destDir $fileName
+  $url = "$baseRawUrl/$fileName"
+  try {
+    $remoteRaw = Invoke-RestMethod -Uri $url -ErrorAction Stop
+    $remoteContent = if ($remoteRaw -is [Array]) { $remoteRaw -join "`n" } else { $remoteRaw }
+    $finalContent = ($remoteContent -replace "\r", "").Trim() + "`n"
+    if ($fileName.EndsWith(".bat")) { $finalContent = $finalContent -replace "\n", "`r`n" }
+    $shouldWrite = $true
+    if (Test-Path $targetPath) {
+      $localContent = Get-Content $targetPath -Raw
+      $cleanRemote = $finalContent.Trim() -replace "\r", ""
+      $cleanLocal = $localContent.Trim() -replace "\r", ""
+      if ($cleanRemote -eq $cleanLocal) { $shouldWrite = $false }
+    }
+    if ($shouldWrite) {
+      Set-Content -Path $targetPath -Value $finalContent -Encoding Ascii
+      Write-Host "  > $fileName synced" -ForegroundColor Gray
+    } else {
+      Write-Host "  . $fileName skipped" -ForegroundColor Gray
+    }
+  } catch {
+    Write-Host "  [!] Failed to download $fileName" -ForegroundColor Red
+  }
+}
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$pathArray = @($currentPath -split ';' | Where-Object { $_ -match '\S' })
+$pathsToAdd = @($destDir, $localDir)
+$pathUpdateRequired = $false
+foreach ($p in $pathsToAdd) {
+  $cleanP = $p.TrimEnd('\')
+  if ($pathArray -replace '\\$', '' -notcontains $cleanP) {
+    $pathArray += $cleanP
+    $pathUpdateRequired = $true
+    Write-Host "[+] Adding $cleanP to User PATH" -ForegroundColor Cyan
+  }
+}
+if ($pathUpdateRequired) {
+  $cleanPathString = ($pathArray | Where-Object { $_ -match '\S' }) -join ';'
+  [Environment]::SetEnvironmentVariable("Path", $cleanPathString, "User")
+  $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + $cleanPathString
+  Write-Host "[!] PATH persistent and session-updated." -ForegroundColor Green
+}
+if (Test-Path $destDir) {
+  $folder = Get-Item -Path $destDir -Force
+  $folder.Attributes = 'Hidden'
+}
+Write-Host "`nBárbaro! 🚀" -ForegroundColor Green

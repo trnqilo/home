@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+
+export mobo="${mobo:-`mobo`}" cpus="${cpus:-`cpus`}" memclock="${memclock:-`mems clocks`}" cpumodel="${cpumodel:-`cpus model`}"
+
+if [[ "$1" =~ ^[0-9]+$ ]]; then watch -tcn $1 $0; exit; fi
+
+function watts {
+  get_energy='sudo cat /sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj'
+$get_energy | if read energy; then sleep 2
+  $awk '{ printf "%.2f", ($2 - $1) / (2 * 1e6) }' <<< "$energy `$get_energy`"
+  printf 'W\n'
+fi
+}
+
+echo "
+$mobo
+
+$cpus x $cpumodel @ `cpus clocks`
+
+`mems` @ $memclock
+
+`gpus`
+
+`temps`
+
+`batt`
+
+`if type uptime &>/dev/null; then echo; uptime | xargs; fi`
+
+" | $sed '/^$/N;/^\n$/D'
