@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+  set -e
+
+# homesync -x
+if [[ -d "$HOLO/.git" ]]; then cd "$HOLO"
+else exit 1; fi
+
+git count-objects
+git fetch
+if [[ "$HOME_RO" ]]; then git reset --hard origin main
+else
+  git diff origin/main --name-status | parrot mag
+  git pull
+  if ! git status | grep "nothing to commit"; then
+    git add -A
+    if [[ "$HOMESQUASH" ]]; then
+      git commit --amend -C HEAD && git push origin main -fu
+    else
+      git commit -m"`date`" && git push origin main
+    fi
+  fi
+fi
+git gc && git count-objects

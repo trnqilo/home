@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+if type system_profiler &>/dev/null; then system_profiler SPHardwareDataType | grep "Model Identifier" | $awk '{print $3}'
+elif type wmic &>/dev/null; then wmic baseboard get product,Manufacturer
+elif type dmidecode &>/dev/null; then sudo dmidecode -s system-product-name; fi
