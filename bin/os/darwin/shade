@@ -1,0 +1,111 @@
+#!/usr/bin/env swift
+
+import AppKit
+
+let qKey: UInt16 = 0x0C     // 12
+let escKey: UInt16 = 0x35   // 53
+let downKey: UInt16 = 0x7D  // 125
+let upKey: UInt16 = 0x7E    // 126
+
+final class OverlayView: NSView {
+  var adjustOpacity: ((CGFloat) -> Void)?
+
+  override var acceptsFirstResponder: Bool {
+    true
+  }
+
+  override func scrollWheel(with event: NSEvent) {
+    guard event.scrollingDeltaY != 0 else {
+      return
+    }
+
+    adjustOpacity?(event.scrollingDeltaY > 0 ? 0.1 : -0.1)
+  }
+
+  override func keyDown(with event: NSEvent) {
+    switch event.keyCode {
+      case escKey, qKey:
+        NSApp.terminate(nil)
+      case upKey:
+        adjustOpacity?(-0.1)
+      case downKey:
+        adjustOpacity?(0.1)
+      default:
+        super.keyDown(with: event)
+    }
+  }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+  private var window: NSWindow!
+  private var opacity: CGFloat = 0.7
+
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    guard let mainScreen = NSScreen.main else { return }
+    let rect = mainScreen.frame
+
+    let viewRect = NSRect(x: 0, y: 0, width: rect.width, height: rect.height)
+    let overlayView = OverlayView(frame: viewRect)
+    overlayView.wantsLayer = true
+    overlayView.layer?.backgroundColor = NSColor.black.cgColor
+
+    overlayView.adjustOpacity = { [weak self] amount in
+      self?.changeOpacity(by: amount)
+    }
+
+    window = NSWindow(
+      contentRect: rect,
+      styleMask: [
+        .titled,
+        .closable,
+        .miniaturizable,
+        .resizable,
+        .fullScreen
+      ],
+      backing: .buffered,
+      defer: false
+    )
+
+    window.contentView = overlayView
+    window.isOpaque = false
+    window.backgroundColor = .clear
+    window.hasShadow = true
+    window.level = .floating
+
+    window.collectionBehavior = [
+      .canJoinAllSpaces,
+      .fullScreenAuxiliary
+    ]
+
+    window.delegate = self
+
+    updateOpacity()
+
+    window.makeKeyAndOrderFront(nil)
+    window.makeFirstResponder(overlayView)
+
+    NSApp.activate(ignoringOtherApps: true)
+  }
+
+  private func changeOpacity(by amount: CGFloat) {
+    opacity = min(max(opacity + amount, 0.2), 0.8)
+    opacity = (opacity * 10).rounded() / 10
+
+    updateOpacity()
+  }
+
+  private func updateOpacity() {
+    window.alphaValue = opacity
+    // window.title = "\(Int(opacity * 100))%"
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    NSApp.terminate(nil)
+  }
+}
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.setActivationPolicy(.regular)
+app.delegate = delegate
+app.run()

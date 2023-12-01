@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+date +%s | clac sub `stat -c %Y "$1"`

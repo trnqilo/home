@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+if [[ "$1" == 'c' ]]; then accent_color=$2; shift 2
+else accent_color=${PROMPT_ACCENT:-gray}; fi
+if [[ "$1" == 'x' ]]; then mux=$2; shift 2; fi
+tmux="tmux -L ${mux:-mux}"
+
+# layout_toggler='if -F "#{==:#{@layout_state},horizontal}" "set -w @layout_state tiled; select-layout tiled" "set -w @layout_state horizontal; select-layout even-horizontal"'
+# old_binds='bind -n MouseDown2Pane choose-buffer; bind -n DoubleClick1Pane resize-pane -Z; bind -n TripleClick1Pane resize-pane -Z; bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "pbcopy"'
+# set -g window-status-current-style fg=black,bold,bg=ACCENT_COLOR ; set -g window-status-style fg=black,bg=default
+window_switcher='if -F "#{>=:#{session_windows},2}" "next-window" "new-window"'
+pane_switcher='if -F "#{>=:#{window_panes},2}" "select-pane -t :.+" "split-window -h -c \"#{pane_current_path}\""'
+paste_command='run "pbpaste | tmux load-buffer -; tmux choose-buffer"'
+copy_command='run "tmux show-buffer | pbcopy"'
+muxconfig='set -g mouse on
+set -g history-limit 100000
+set -g status-style bg=ACCENT_COLOR,fg=black
+set -g status-bg ACCENT_COLOR
+set -g pane-border-style fg=ACCENT_COLOR
+set -g pane-active-border-style fg=ACCENT_COLOR
+set -g pane-border-status top
+set -g pane-border-format "#{?pane_active,#[fg=ACCENT_COLOR] [#P] #[default],  #P  }"
+set -g window-status-current-format "[#W]"
+set -g window-status-format " #W "
+set -g status-interval 10
+set -g status-left " "
+set -g status-right " #(batt) %m/%d/%y %H:%M "
+set -g status-right-length 40
+set-hook -g client-resized "refresh-client -S"
+setw -g mode-keys vi
+setw -g clock-mode-colour ACCENT_COLOR
+setw -g clock-mode-style 24
+bind -n M-T clock-mode
+bind -n M-m set -g mouse
+bind -n M-w select-pane -U
+bind -n M-a select-pane -L
+bind -n M-s select-pane -D
+bind -n M-d select-pane -R
+bind -n M-W resize-pane -U 5
+bind -n M-A resize-pane -L 5
+bind -n M-S resize-pane -D 5
+bind -n M-D resize-pane -R 5
+bind -n M-r resize-pane -x "67%"
+bind -n M-R resize-pane -x "33%"
+bind -n M-z resize-pane -Z
+bind -n M-c split-window -h -c "#{pane_current_path}"
+bind -n M-v split-window -v -c "#{pane_current_path}"
+bind -n M-q detach-client
+bind -n M-k kill-pane
+bind -n M-n new-window
+bind -n M-e select-layout even-horizontal
+bind -n M-t select-layout tiled
+bind -n M-C COPY_COMMAND
+bind -n M-V PASTE_COMMAND
+bind -n M-p choose-buffer
+bind -n M-P paste-buffer
+bind -n M-x PANE_SWITCHER
+bind -n M-g WINDOW_SWITCHER
+bind -n M-\` WINDOW_SWITCHER
+bind -n M-1 select-window -t 0
+bind -n M-2 select-window -t 1
+bind -n M-3 select-window -t 2
+bind -n M-4 select-window -t 3
+bind -n MouseDown3Pane resize-pane -Z
+bind -T copy-mode-vi MouseDown3Pane send-keys -X copy-pipe-and-cancel
+unbind -T copy-mode-vi MouseDragEnd1Pane
+bind-key -n DoubleClick1Pane "select-pane ; copy-mode -M ; send-keys -X select-word"
+bind-key -n TripleClick1Pane "select-pane ; copy-mode -M ; send-keys -X select-line"'
+if [[ "$PROMPT_ACCENT" == black ]]; then muxconfig="${muxconfig//black/white}"; fi
+muxconfig="${muxconfig//PASTE_COMMAND/$paste_command}"
+muxconfig="${muxconfig//WINDOW_SWITCHER/$window_switcher}"
+muxconfig="${muxconfig//PANE_SWITCHER/$pane_switcher}"
+muxconfig="${muxconfig//COPY_COMMAND/$copy_command}"
+muxconfig="${muxconfig//ACCENT_COLOR/$accent_color}"
+muxoptions="${muxconfig//$'\n'/\\; }"
+if [[ "$1" == 'conf' ]]; then echo "$muxconfig"
+elif [[ "$1" == 'init' ]]; then echo "$muxconfig" > "$HOME/.tmux.conf" && echo 'conf saved.'
+elif [[ "$1" == 'ls' ]]; then $tmux ls -F '#{session_name}'
+elif [[ "$1" == 'keys' || "$1" == 'type' ]]; then shift; keys="$@"; $tmux send-keys "${keys:-`cat`}"
+elif $tmux attach > /dev/null 2>&1; then :
+elif [[ "$1" == 'solo' ]]; then shift; command="$@"
+  bash -c "$tmux new-session \"${command:-bash}\"\; $muxoptions"
+elif [[ "$1" == 'trio' ]]; then
+  session="$tmux new-session '${2:-bash}' \; split-window '${3:-bash}' \; select-layout even-horizontal \; split-window '${4:-bash}' \; $muxoptions"
+  bash -c "$session"
+elif [[ "$1" ]]; then
+  session="$tmux new-session \"$1\"\;"
+  is odd "$#" && split="split-window\;"
+  [[ $3 ]] && layout='tiled' || layout="even-horizontal"; shift
+  function splitCommand { echo "$session split-window \"$@\"\;"; }; export -f splitCommand
+  bash -c "$session `each map splitCommand "$@"` $split select-layout $layout\; $muxoptions"
+else
+  bash -c "$tmux new-session\; $muxoptions"
+fi

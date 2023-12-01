@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -e
+
+cd "${STASH_HOME:-.}"
+if ! [[ "$2" ]]; then
+  parrot red 'eg. stash label [dir1 dir2... | pop]'
+  ls .stash 2>/dev/null
+  exit
+fi
+label=$1
+if [[ "$2" == 'pop' ]]; then
+  cd .stash/$label
+  for item in *; do
+    if [[ -e "../../$item" ]]; then
+      surely "clobber $item" || continue
+      rm -fr "../../$item"
+    fi
+    mv "$item" "../../$item"
+  done
+elif [[ "$2" == 'all' ]]; then
+  if [[ ! "$STASHES" ]]; then
+    echo 'STASHES is empty'; exit
+  fi
+  readarray -t stashes <<< "$STASHES"
+  $0 "$label" "${stashes[@]}"
+else shift
+  if [[ "`ls ".stash/$label" 2>/dev/null`" ]]; then
+    echo "stash not empty: $label"
+    exit
+  fi
+  mkdir -p .stash/$label
+
+  while [[ "$1" ]]; do
+    mv "$1" .stash/$label
+    shift
+  done
+fi
