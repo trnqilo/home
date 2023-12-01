@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$PLAY"
+
+[[ ! -d "$STEAM_HOME/steamapps/common" ]] \
+  && echo 'STEAM_HOME directory is invalid.' \
+  && exit 1 ||:
+
+surely sure 'copy custom assets' || exit
+
+cd "$PLAY/Source/"
+cstrike_custom="`realpath ./cstrike`"
+
+cd "$STEAM_HOME/steamapps/common/Counter-Strike Source/cstrike"
+rm -fr custom
+
+base64 -d "$cstrike_custom" | tar -zxvf -
