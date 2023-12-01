@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+function saywords {
+  while [[ "$1" ]]; do
+    if grep -iq "^${1}$" <<< "$words"; then shift
+    else say try again; return; fi
+  done
+  say $input
+}
+
+words="`base64 -d "$(dirname $0)/words" | gzip -dc`"
+
+while read -rep '' input; do saywords $input; done
