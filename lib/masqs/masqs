@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+set -e
+
+export awk=${awk:-gawk} sed=${sed:-sed} sudo=${sudo:-sudo} masqs_dir=`dirname $0`
+
+function _masqs_base { echo -e 'no-resolv\nserver=1.1.1.1\naddn-hosts=/etc/masqs/hosts\ndomain-needed\nbogus-priv\ndhcp-authoritative'; }
+
+function _masqs_net { subnet="$1" interface="$2" static="$3"
+  if [[ ! "$interface" ]]; then echo 'net [subnet] [interface] dynamic|static'; return; fi
+  if [[ "$static" == 'static' ]]; then start=1 end=1 duration=0m; fi
+  echo -e "interface=$interface\ndhcp-range=192.168.${subnet}.${start:-2},192.168.${subnet}.${end:-254},${duration:-72h}"
+}
+
+function _masqs_guest { name="$1" mac="$2" subnet="$3" address="$4"
+  if [[ "$name" == 'ignore' ]]; then echo "dhcp-host=${mac},ignore"
+  elif [[ ! "$address" ]]; then echo 'guest [name] [mac] [subnet] [address]'
+  else echo "dhcp-host=${mac},192.168.${subnet}.${address},${name}"; fi
+}
+
+function _masqs_init {
+  if [[ "$1" ]]; then
+     _masqs_net "$@" | write_system_file /etc/dnsmasq.d/masqs.${1}
+  else _masqs_base | write_system_file /etc/dnsmasq.d/masqs; fi
+}
+
+function _masqs_edit { local conf='masqs'
+  if [[ "$1" ]]; then conf+=".${1}"; fi
+  $sudo vim "/etc/dnsmasq.d/${conf}"
+}
+
+function _masqs_blocklist {
+  if [[ "$1" == 'fetch' ]]; then shift
+    local hosts=( $@ 'https://winhelp2002.mvps.org/hosts.txt' )
+    curl -s ${hosts[*]} \
+      | grep '^0\.0\.0\.0' | grep -o '^[^#]*' \
+      | $awk '{print "0.0.0.0 "$2}' | $sed -e 's/\r/\n/g' \
+      | sort | uniq | grep -v '^$'
+  else
+    base64 -d "$DOTHOME/lib/masqs/conf/blockhosts"
+  fi
+}
+
+function _masqs_strangers { grep -E 'no address available' /var/log/syslog | grep -Eo '([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}' | sort | uniq; }
+
+function _masqs_aps {
+  [[ "$1" ]] && aps='mux' || exit
+  while [[ "$1" ]]; do
+    aps+=" 'forev clear $sudo hostapd /etc/hostapd/${1}'"; shift
+  done
+  bash -c "$aps"
+}
+
+function _masqs_fw {
+  echo -e '*nat\n:PREROUTING ACCEPT [0:0]\n:POSTROUTING ACCEPT [0:0]\n-F'
+  _masqs_guests | while read guest; do
+    $awk '{print "# "$3" "$2}' <<< "$guest"
+    if [[ "$guest" == *'.lo' ]]; then printf '# '; fi
+    $awk '{print "-A POSTROUTING -s "$1" -o "$4" -j MASQUERADE"}' <<< "$guest `wan_interface`"
+  done
+  echo 'COMMIT'
+  cat "$masqs_dir/conf/before.rules"
+}
+
+function _masqs_hosts {
+  _masqs_guests | $sed 's/.0\/24/.1/g;s/.lo//g' | while read guest; do
+    $awk '{print tolower($1" "$3".box")}' <<< "$guest"
+  done
+  _masqs_blocklist
+}
+
+function _masqs_guests {
+  cat /etc/dnsmasq.d/masqs.[0-9]* | ( masqs="`cat`"
+  echo "$masqs" | grep '^dhcp-range=' \
+    | $sed 's/=/ /g;s/,/ /g;s/72h//g;s/0m/.lo/g;s/.[0-9]\+ /.0\/24 /g' \
+    | $awk "{print \$2\" 00:00:00:00:00:00 $HOSTNAME\"\$4}"
+  echo "$masqs" | grep '^dhcp-host=' \
+    | $awk -F, '{print $2" "$1" "$3}' | $sed 's/dhcp-host=//g' \
+    | sort -V
+  ) | column -s $' ' -t
+}
+
+function _masqs_netplan { echo -e 'network:\n  version: 2\n  ethernets:'
+  cat /etc/dnsmasq.d/masqs.[0-9]* | grep 'interface\|range' | xargs \
+    | $sed 's/interface=/\n/g;s/,/ /g;s/dhcp-range=//g' \
+    | $awk '{print $1" "$2}' \
+    | while read interface ip; do
+        if [[ ! "$ip" ]]; then continue; fi
+        echo -e "    $interface:\n      addresses:\n      - ${ip%.*}.1/24"
+        echo -e '      dhcp4: false\n      optional: true'
+        # echo -e '      nameservers:\n        addresses:\n        - 1.1.1.1'
+      done
+}
+
+
+function _masqs_apply {
+  if [[ ! -f '/etc/dnsmasq.d/masqs' ]]; then echo 'no masqs'; return; fi
+  apply_system
+  apply_netplan
+  apply_hosts
+  apply_fw
+  _masqs_rez
+}
+
+function _masqs_rez { echo "`$sudo ufw reload; $sudo systemctl restart dnsmasq; _masqs_status`"; }
+
+function _masqs_status { echo "`$sudo ufw status numbered; $sudo systemctl status dnsmasq`"; }
+
+function _masqs_leases { cat /var/lib/misc/dnsmasq.leases; }
+
+function apply_hosts { _masqs_hosts | write_system_file /etc/masqs/hosts; }
+
+function write_system_file { local filedata="`cat`" filename="$1"
+  if [[ "$save" && ! -f "${filename}.${save}" && -f "$filename" ]]; then $sudo cp "$filename" "${filename}.${save}"; fi
+  if ! $sudo diff <(echo "$filedata") "$filename" &>/dev/null; then
+    $sudo mkdir -p "`dirname "$filename"`"
+    temp_filename="/dev/shm/`basename $filename`"
+    echo "$filedata" > "$temp_filename"
+    $sudo chown root:root "$temp_filename"
+    $sudo mv "$temp_filename" "$filename"
+    if [[ "$mod" ]]; then $sudo su -c "chmod $mod \"$filename\""; fi
+  else echo "${filename} unchanged"; fi
+}
+
+function apply_netplan {
+  _masqs_netplan | mod=600 write_system_file /etc/netplan/masqs.yaml
+  $sudo netplan generate
+  $sudo netplan apply
+}
+
+function apply_fw {
+  if $sudo grep -qE '^[[:space:]]*#?[[:space:]]*IPV6=' '/etc/default/ufw'; then
+    $sudo $sed -i 's|^[[:space:]]*#\?[[:space:]]*IPV6=.*|IPV6=no|' '/etc/default/ufw'
+  fi
+  $sudo ufw --force enable
+  $sudo ufw default deny incoming
+  $sudo ufw default allow outgoing
+  $sudo ufw default allow forward
+  $sudo ufw deny in on `wan_interface`
+  cat /etc/dnsmasq.d/masqs.[0-9]* | grep 'interface=' | $sed 's/interface=//g' | \
+    while read interface; do $sudo ufw allow in on $interface; done
+  _masqs_fw | mod=600 save=original write_system_file /etc/ufw/before.rules
+}
+
+function apply_system {
+  $sudo systemctl stop systemd-resolved && $sudo systemctl disable systemd-resolved && $sudo systemctl mask systemd-resolved ||:
+  if ! grep -q '^net.ipv4.ip_forward=1' /etc/sysctl.conf; then
+    $sudo su -c 'echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf'
+    $sudo grep 'net.ipv4.ip_forward' /etc/sysctl.conf
+    $sudo sysctl -p > /dev/null
+  fi
+  $sudo apt install dnsmasq -y
+}
+
+function wan_interface { ip route | grep default | $awk '{print $5}'; }
+
+if [[ "$1" == '/'* ]]; then "$@"
+elif [[ "$1" ]]; then _masqs_$@
+else echo functions: `grep '^function _masqs_' $0 | $awk '{print $2}' | $sed 's/_masqs_//g' | sort`; fi

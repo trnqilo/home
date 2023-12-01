@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+if whereami darwin; then
+  sudo networksetup -setnetworkserviceenabled "${2:-Ethernet}" "${1:-off}"
+  # until wan; do printf .; sleep 1; done
+fi
