@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! "$stash" ]] && echo 'set stash' && exit ||:
+cd "${stash_root:-.}"
+mkdir -p ".stash/$stash"
+
+if [[ "$1" == 'pop' ]]; then
+  mv ".stash"/$stash .
+else
+  if [[ -d ".stash/$stash" ]]; then parrot yellow "$stash already stashed"
+  else mv "$stash" ".stash" || parrot red "$stash stash failed"; fi
+fi
