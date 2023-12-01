@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'init' ]]; then
+  if [[ "$theme" ]]; then
+    declare -A themes=(['dark']='Default Dark+' ['mono']='Monokai' ['dim']='Monokai Dimmed'
+                       ['kim']='Kimbie Dark'    ['abyss']='Abyss'  ['red']='Red' ['blue']='Tomorrow Night Blue')
+    theme="${themes["$theme"]}"
+  fi
+  if [[ "$2" ]]; then shift
+    bg4=$1 bg3=`colorshade $1 0.7`
+    bg2=`colorshade $1 0.4` bg1=`colorshade $1 0.2`
+  fi
+  if [[ "$2" ]]; then shift; fg=$1; fi
+
+  function write_conf {
+    while [[ "$1" ]]; do conf="${1}.json"; shift
+      json="$(<"$DOTHOME/conf/code/$conf")"
+      json="${json//Default Dark+/${theme:-Default Dark+}}"
+      json="${json//080029/${bg1:-080029}}"
+      json="${json//130944/${bg2:-130944}}"
+      json="${json//271888/${bg3:-271888}}"
+      json="${json//6433dd/${bg4:-6433dd}}"
+      json="${json//77e1d1/${fg:-77e1d1}}"
+      if [[ ! "$fg" ]]; then json="`grep -v 77e1d1 <<< "$json"`"; fi
+
+      home_conf_sha=`sha256sum <<< "$json" | $awk '{print $1}'`
+      local_conf_sha=`cat "${confdir}/${conf}" | sha256sum | $awk '{print $1}'`
+      if [[ "$home_conf_sha" == "$local_conf_sha" ]]; then
+        parrot green "$conf"
+      else
+        echo "$json" > "$confdir/$conf"
+        parrot yellow "$conf"
+      fi
+    done
+  }
+  for editor in Code Cursor; do
+    while read confdir; do
+      if [[ -d "$confdir" ]]; then echo $editor
+        write_conf settings keybindings
+      fi
+    done <<< "$HOME/.config/$editor - OSS/User
+              $HOME/.config/$editor/User
+              $APPDATA/$editor/User
+              $HOME/Library/Application Support/$editor/User"
+  done
+elif type "$edi" &>/dev/null; then $edi $@
+elif type code &>/dev/null; then code $@
+elif type code-oss &>/dev/null; then code-oss $@
+elif type cursor &>/dev/null; then cursor $@
+elif type vim &>/dev/null; then vim $@; fi

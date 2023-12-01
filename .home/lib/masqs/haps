@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+[[ "$1" ]] && haps='mux' || exit
+while [[ "$1" ]]; do
+  haps+=" 'forev clear sudo hostapd /etc/hostapd/${1}*'"; shift
+done
+bash -c "$haps"
