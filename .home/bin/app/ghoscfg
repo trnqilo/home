@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -e
+
+BACKGROUND="#${BACKGROUND:-000000}"
+FOREGROUND="#${FOREGROUND:-ccbbff}"
+OPACITY="${OPACITY:-0.99}"
+BLUR="${BLUR:-0}"
+CURSOR="#${CURSOR:-ccbbff}"
+SELECTIONBG="#${SELECTIONBG:-4a3b69}"
+SELECTIONFG="#${SELECTIONFG:-ffffff}"
+BLACK="#${BLACK:-121212}"
+RED="#${RED:-ff2a2a}"
+GREEN="#${GREEN:-05ee81}"
+YELLOW="#${YELLOW:-e5c07b}"
+BLUE="#${BLUE:-2255ff}"
+MAGENTA="#${MAGENTA:-d858f7}"
+CYAN="#${CYAN:-00ccdd}"
+WHITE="#${WHITE:-ffffff}"
+
+config=$(<"$DOTHOME/conf/ghostty/config.ghostty")
+config=${config//BACKGROUND/$BACKGROUND}
+config=${config//FOREGROUND/$FOREGROUND}
+config=${config//OPACITY/$OPACITY}
+config=${config//BLUR/$BLUR}
+config=${config//CURSOR/$CURSOR}
+config=${config//SELECTIONBG/$SELECTIONBG}
+config=${config//SELECTIONFG/$SELECTIONFG}
+config=${config//BLACK/$BLACK}
+config=${config//RED/$RED}
+config=${config//GREEN/$GREEN}
+config=${config//YELLOW/$YELLOW}
+config=${config//BLUE/$BLUE}
+config=${config//MAGENTA/$MAGENTA}
+config=${config//CYAN/$CYAN}
+config=${config//WHITE/$WHITE}
+
+mkdir -p "$HOME/.config/ghostty"
+echo "$config" > "$HOME/.config/ghostty/config.ghostty"
