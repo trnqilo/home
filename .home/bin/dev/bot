@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+resume= bot=${bot:-codex}
+if [[ "$1" =~ ^r(esume)?$ && "$bot" == 'claude' ]]; then $bot --resume
+elif [[ "$1" =~ ^r(esume)?$ && "$bot" == 'codex' ]]; then $bot resume
+elif [[ "$1" == 'conf' ]]; then
+  agents() { agents="$@"
+    cat "$DOTHOME/conf/agents/"* > "$agents"
+    if [[ -f "$HOLO/conf/agents.md" ]]; then cat "$HOLO/conf/agents/"* >> "$agents"; fi;
+  }
+  if [[ -d "$HOME/.claude" ]]; then agents "$HOME/.claude/CLAUDE.md"; fi
+  if [[ -d "$HOME/.codex" ]]; then agents "$HOME/.codex/AGENTS.md"; fi
+elif [[ "$1" =~ ^s(witch)?$|^x$ ]]; then shift
+  if [[ "$bot" == 'claude' ]]; then bot=codex bot "$@"
+  elif [[ "$bot" == 'codex' ]]; then bot=claude bot "$@"; fi
+else $bot "$@"; fi
