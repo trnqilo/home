@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -e
+
+(
+if [[ -f '/proc/cpuinfo' ]]; then
+  grep '^model name' /proc/cpuinfo | head -1 | $awk '{$1=$2=$3="";print $0}' \
+    | xargs | $awk '{print $0"\n "}'
+  grep 'cpu.*MHz' /proc/cpuinfo  | $awk '{print $4/1000.0}' | round 2 | \
+  while read clock; do
+    [[ "$i" ]] && let ++i || let i=4
+    if (( i == 4 )); then echo; i=0; fi
+    printf "$clock GHz\t";
+  done
+fi
+
+if type lscpu &>/dev/null; then echo; lscpu -e=MHz | tail -n +2 | $awk '{printf "%.2f GHz\n", $1/1000}'; fi
+
+if type nvidia-smi &>/dev/null; then
+  nvidia-smi -q -d CLOCK | grep '  Clocks$' -A4 | grep -iE 'graphics|SM|Memory|Video' | \
+  while read clock; do printf "\n${clock/'                   :'/}"; done && echo
+fi
+
+if type system_profiler &>/dev/null; then echo `system_profiler SPMemoryDataType | $awk '{print $2}'`
+elif type wmic &>/dev/null; then wmic memorychip get speed
+elif type dmidecode &>/dev/null; then echo;sudo dmidecode --type 17 | grep MT/s | head -1 | $awk '{print $2" "$3}' | xargs; fi
+
+) | grep -v '^$' ||:
