@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ ! "$jira_base_url" ]]; then echo 'required: jira_base_url'; exit; fi
+
+if [[ "$1" == 'api' ]]; then shift
+  if [[ "$1" == 'fmt' ]]; then shift; export fmt=true; fi
+  if [[ "${jira_email:-}" && "${jira_token:-}" && "${jira_project:-}" ]]; then
+    while [[ "$1" ]]; do
+      url="${jira_base_url%/}/rest/api/3/issue/${jira_project}-${1}"
+      curlcache for 5minutes "$url" --fail-with-body --connect-timeout 5 --max-time 20 -u "${jira_email}:${jira_token}" -H "Accept: application/json" \
+          | ( if [[ "$fmt" == true ]]; then ${jirfmt:-jirfmt}; else cat; fi )
+      shift
+    done
+  else
+    echo -e 'required:\njira_project='\''ABC'\''\njira_email='\''address'\''\njira_token='\''token'\'
+  fi
+elif [[ "$1" ]]; then
+  while [[ "$1" ]]; do item="$1" item="${item//,/}"; shift
+    if [[ "$item" =~ .*-.* ]]; then
+      open "$jira_base_url/browse/$item"
+    elif is int "$item"; then
+      open "$jira_base_url/browse/${jira_project}-${item}"
+    elif [[ ! "$1" ]]; then
+      open "$jira_base_url/browse/$item"
+    else
+      jira_project="$item"
+    fi
+  done
+else
+  open "$jira_base_url"
+fi
