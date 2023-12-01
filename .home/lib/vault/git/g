@@ -1,0 +1,13 @@
+
+function gci { local message="$@"; git commit -m "$message"; }
+function gbr { local regex="$@"; git branch -a | grep --color=always -iE "${regex:-'.*'}"; }
+function gp { local args=
+  if [[ "$1" == '-f' ]]; then args+='--force-with-lease --force-if-includes'; echo $args; fi
+  git push origin HEAD $args -u
+}
+function g {
+  if [[ "$1" == 'p' ]]; then shift; gp "$@"
+  elif [[ "$1" ]]; then git "$@"
+  else git fetch && git status; fi
+ }; __git_complete g __git_main
+alias gs='git status' gsa='gs --ignored' gup='git pull --rebase' gcia='git add -A; gci' gco='git checkout'

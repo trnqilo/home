@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -e
+
+
+function print_state { stamp
+  local disablesleep=`pmset -g | grep SleepDisabled | $awk '{print $2}'`
+  if [[ "$disablesleep" == 0 ]]; then echo sleepy
+  elif [[ "$disablesleep" == 1 ]]; then echo caffeinated
+  else echo unknown; fi
+}
+
+function update_state { local disablesleep=1
+  if [[ "$1" == 'off' || "$1" == 0 ]]; then disablesleep=0
+  elif [[ ! "$1" ]]; then
+    disablesleep=`pmset -g | grep SleepDisabled | $awk '{print 1 - $2}'`
+  fi
+  disablesleep=${disablesleep:-1}
+  sudo pmset -a disablesleep $disablesleep
+  print_state
+}
+
+function stamp { printf "$(parrot cyan `date +%R`) "; }
+
+if [[ "$1" =~ ^f(lip)?$ ]]; then
+  update_state
+elif [[ "$1" =~ ^z(zz)?$ ]]; then
+  update_state off
+  stamp; pmset sleepnow | $awk '{print tolower($0)}'
+  update_state on
+elif [[ "$1" ]]; then
+  update_state $1
+else
+  print_state
+fi

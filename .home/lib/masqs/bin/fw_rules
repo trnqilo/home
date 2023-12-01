@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -e
+
+rules_file="/etc/ufw/before.rules"
+backup_file="/etc/ufw/before.rules.bak"
+required_line="# Don't delete these required lines"
+
+sudo cp "$rules_file" "$backup_file"
+
+new_content=$(cat)
+
+header_and_before=$($awk -v required="$required_line" 'BEGIN{found=0} {
+    if ($0 ~ required) { found=1 }
+    if (!found) print
+}' "$rules_file")
+
+after_required=$($awk -v required="$required_line" 'BEGIN{found=0} {
+    if (found) print
+    if ($0 ~ required) found=1
+}' "$rules_file")
+
+{
+  echo "$header_and_before"
+  echo "$new_content"
+  echo "$after_required"
+} | sudo tee "$rules_file" > /dev/null
+
+echo "Successfully updated $rules_file. Backup saved as $backup_file."

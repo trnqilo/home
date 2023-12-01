@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == *'.img' ]]; then
+  VBoxManage convertfromraw $1 ${1//.img/.vdi} --format VDI
+elif [[ "$1" == *'.vdi' ]]; then
+  VBoxManage clonehd "$1" "${1/.vdi/.img}" --format RAW
+else
+  VBoxManage startvm "$1" $([[ "$2" == '-h' ]] && echo --type headless)
+fi

@@ -1,0 +1,19 @@
+color elflord
+set number
+set backspace=2
+set history=700
+set undolevels=700
+set mouse=a
+set shiftwidth=2
+set smarttab
+set expandtab
+set tabstop=4
+set softtabstop=0
+set nobackup
+set nowritebackup
+set noswapfile
+:cabbr qq q!
+:cabbr Q q
+:cabbr X x
+syntax on
+inoremap <S-Tab> <C-d>
