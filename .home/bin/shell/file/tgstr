@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [[ "$1" ]]; then
+  tar -C "$(dirname "$1")" -cz "$(basename "$1")" | base64
+else
+  rm -fr _tmp && mkdir -p _tmp && base64 -d | tar -xz -C "./_tmp"
+fi
