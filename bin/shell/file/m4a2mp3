@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+if ! type ffmpeg &>/dev/null; then echo 'ffmpeg is not installed.'; exit; fi
+
+if [[ "$3" ]]; then prefix="$3 - "; else prefix=; fi
+if [[ "$2" ]]; then target="`realpath "$2"`"; fi
+if [[ "$1" ]]; then cd "$1"; fi
+
+for m4a in *.m4a; do
+  mp3="${target:-.}/${prefix}${m4a%.m4a}.mp3"
+  if [[ -f "$mp3" ]]; then errors+="\n$mp3 exists"
+  else ffmpeg -i "$m4a" -codec:a libmp3lame -q:a 2 "$mp3"; fi
+done
+[[ "$errors" ]] && parrot red "$errors"

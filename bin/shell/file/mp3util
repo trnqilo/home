@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -e
+
+function non_audio_files {
+  has_audio() {
+    ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$1" 2>/dev/null | head -n1 | grep -q .
+  }
+  is_encrypted() {
+    ffprobe -v error -show_entries stream=enc_key_id -of csv=p=0 "$1" \
+      | grep -q .
+  }
+  while IFS= read -r -d '' file; do
+    if ! has_audio "$file"; then ${do:-echo non-audio:} "$file"
+    elif is_encrypted "$file"; then ${do:-echo encrypted:} "$file"; fi
+  done < <(find "${1:-.}" -type f -print0)
+}
+
+
+if [[ "$1" == 'non' ]]; then shift; non_audio_files "$@"; exit; fi
+
+if ! type ffmpeg &>/dev/null; then echo 'ffmpeg is not installed.'; exit; fi
+if [[ ! -d "$1" || ! -d "$2" || "`realpath $1`" == "`realpath $2`" ]]; then
+  echo 'usage: mp3util source dest [prefix]'; exit
+fi
+if [[ "$3" ]]; then prefix="$3 - "; else prefix=; fi
+if [[ "$2" ]]; then target="`realpath "$2"`"; fi
+if [[ "$1" ]]; then cd "$1"; fi
+
+surely "convert all audio in `pwd` to mp3 in $target"
+
+# while IFS= read -r -d '' file; do
+#   song="`basename "$file"`" album="$(dirname "$file" | sed 's/\.\///g;s/\// - /g')"
+#   if [[ "$album" == . ]]; then album=; else album+=' - '; fi
+#   output="${target}/${prefix}${album}${song%.*}.mp3"
+#   if [[ -f "$output" ]]; then errors+="\nalready exists: $output"
+#   else ffmpeg -i "$file" -codec:a libmp3lame -q:a 2 "$output" || errors+="\nFAIL: $output"; fi
+# done < <(find . -type f \( -iname "*.mp4" -o -iname "*.wav" -o -iname "*.mp3" \) -print0)
+
+while IFS= read -r -d '' rel; do
+  file="./$rel"
+  subdir="$(dirname -- "$rel")"
+  [[ "$subdir" == "." ]] && subdir=""
+  outdir="${target%/}/${subdir}"
+  song="$(basename -- "$rel")"
+  output="${outdir}/${prefix}${song%.*}.mp3"
+  if [[ -e "$output" ]]; then errors+=$'\n'"skip existing: $output"; continue; fi
+  if ! mkdir -p -- "$outdir"; then errors+=$'\n'"mkdir fail: $outdir"; continue; fi
+  ffmpeg -hide_banner -nostdin -y -i "$file" \
+    -map 0:a:0 -vn -c:a libmp3lame -q:a 2 \
+    "$output" || errors+=$'\n'"ffmpeg fail: $output"
+done < <(
+  find . -type f \
+    \( -iname "*.mp4" -o -iname "*.wav" -o -iname "*.mp3" \) \
+    -printf '%P\0'
+)
+
+[[ "$errors" ]] && parrot red "$errors"
