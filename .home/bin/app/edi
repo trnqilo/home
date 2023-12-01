@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'init' ]]; then
+  function write_conf {
+    while [[ "$1" ]]; do conf="${1}.json"; shift
+      home_conf_sha=`sha256sum "$DOTHOME/conf/code/${conf}" | $awk '{print $1}'`
+      local_conf_sha=`sha256sum "${confdir}/${conf}" | $awk '{print $1}'`
+      if [[ "$home_conf_sha" == "$local_conf_sha" ]]; then
+        parrot green "$conf"
+      else
+        cp -v "$DOTHOME/conf/code/"${conf} "$confdir" | parrot yellow
+      fi
+    done
+  }
+  for editor in Code Cursor; do
+    while read confdir; do
+      if [[ -d "$confdir" ]]; then echo $editor
+        write_conf settings keybindings
+      fi
+    done <<< "$HOME/.config/$editor - OSS/User
+              $HOME/.config/$editor/User
+              $APPDATA/$editor/User
+              $HOME/Library/Application Support/$editor/User"
+  done
+elif type "$edi" &>/dev/null; then $edi $@
+elif type code &>/dev/null; then code $@
+elif type code-oss &>/dev/null; then code-oss $@
+elif type cursor &>/dev/null; then cursor $@
+elif type vim &>/dev/null; then vim $@; fi
