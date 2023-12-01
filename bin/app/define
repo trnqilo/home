@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+while [[ "$1" ]]; do
+  curlcache "https://api.dictionaryapi.dev/api/v2/entries/en/$1" \
+    | $python -m json.tool \
+    | grep '"word":\|"definition":\|"example":' \
+    | $sed 's/.*/\L&/;s/  */ /g;s/\."//g;s/,$//g;s/"//g;s/ word:/#/g;s/ definition:/+/g;s/ example:/  -/g;s/\\u2019/'"'"'/g;2,$ s/^#/\n#/' \
+    | (type bat &>/dev/null && bat --style=plain --language=markdown || grep --color=always '^#.*\|^+\|^  -')
+  [[ "$2" ]] && echo ||:
+  shift
+done

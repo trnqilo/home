@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+if [[ "$1" == 'filevault' ]]; then sudo fdesetup enable
+elif [[ "$1" == 'userdel' ]]; then sudo fdesetup remove -user "$2"
+elif [[ "$2" == 'unlock' ]]; then sudo diskutil apfs unlockVolume "$2"
+elif [[ "$2" == 'shm' ]]; then size_mb=${3:-512}
+  diskutil erasevolume APFS "SHM" $(hdiutil attach -nomount ram://$((size_mb * 2048)))
+elif [[ "$1" ]]; then sudo diskutil apfs encryptvolume "/dev/disk${1/\/dev\/disk}" -user ${2:-disk}
+else clear
+  while diskutil apfs list | grep -i 'encryption progress' | grep -Po '\d+\.\d+%'; do
+    sleep 20 && clear
+  done
+  echo 'encryption finished'
+fi

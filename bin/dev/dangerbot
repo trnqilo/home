@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e -o pipefail
+
+user_prompt="$@"
+if [[ "$bot" == 'claude' ]]; then
+  flags='--verbose --print'
+  if [[ "$pwnage" == true ]]; then
+    claude --dangerously-skip-permissions $flags "$user_prompt"
+  else
+    claude --permission-mode acceptEdits $flags "$user_prompt"
+  fi
+else
+  flags='exec --sandbox workspace-write --skip-git-repo-check'
+  if [[ -t 0 ]]; then
+    codex $flags --add-dir "$CTX" "$user_prompt" < /dev/null
+  else
+    codex $flags --add-dir "$CTX" -
+  fi
+fi

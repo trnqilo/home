@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+
+window_switcher="if-shell -F \"#{>=:#{session_windows},2}\" \"next-window\" \"new-window\""
+layout_toggler_unused="if-shell -F \"#{==:#{@layout_state},horizontal}\" \"set -w @layout_state tiled; select-layout tiled\" \"set -w @layout_state horizontal; select-layout even-horizontal\""
+paste_command="\"${muxpaste:-pbpaste} | tmux load-buffer - && tmux paste-buffer\""
+muxoptions="set -g mouse on\; set -g history-limit 100000\; setw -g mode-keys vi\; set-option -g status-bg ${PROMPT_ACCENT:-gray}\; set-option -g pane-border-style fg=${PROMPT_ACCENT:-gray}\; set-option -g pane-active-border-style fg=${PROMPT_ACCENT:-gray}\; set-option -g pane-border-status top\; set -g pane-border-format \"#{?pane_active,#[fg=${PROMPT_ACCENT:-gray}] [#P] #[default],  #P  }\"\; set-option -g status-right '%m/%d/%y %H:%M'\; set -g prefix C-b\; set -g prefix2 C-x\; bind-key s set-option -g mouse\; bind-key c split-window -h -c \"#{pane_current_path}\"\; bind-key v split-window -v -c \"#{pane_current_path}\"\; bind-key x select-pane -t :.+\; bind-key q detach-client\; bind-key K kill-pane\; bind-key e select-layout even-horizontal\; bind-key r select-layout tiled\; bind-key p run ${paste_command}\; bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel \"${muxcopy:-pbcopy}\"\; bind -n M-w select-pane -U\; bind -n M-a select-pane -L\; bind -n M-s select-pane -D\; bind -n M-d select-pane -R\; bind-key -n M-z resize-pane -Z\; bind -n M-c split-window -h -c \"#{pane_current_path}\" \; bind -n M-v split-window -v -c \"#{pane_current_path}\"\; bind -n M-x select-pane -t :.+\; bind -n M-p run ${paste_command}\; bind-key -n DoubleClick1Pane resize-pane -Z\; bind -n M-q detach-client\; bind -n M-K kill-pane\; bind -n M-n new-window\; bind -n M-g ${window_switcher}\; bind -n M-\\\` ${window_switcher}\; bind -n M-W resize-pane -U 5\; bind -n M-A resize-pane -L 5\; bind -n M-S resize-pane -D 5\; bind -n M-D resize-pane -R 5\; bind -n M-e select-layout even-horizontal\; bind -n M-r select-layout tiled"
+muxconfig="${muxoptions//'\; '/'\n'}"
+
+if [[ "$1" == 'conf' ]]; then echo -e "$muxconfig"
+elif [[ "$1" == 'init' ]]; then echo -e "$muxconfig" > "$HOME/.tmux.conf" && echo 'conf saved.'
+elif [[ "$1" == 'keys' || "$1" == 'type' ]]; then shift; keys="$@"; tmux send-keys "${keys:-`cat`}"
+elif quietly 'tmux a'; then :
+elif [[ "$1" == 'solo' ]]; then shift; command="$@"
+  bash -c "tmux new-session \"${command:-bash}\"\; $muxoptions"
+elif [[ "$1" == 'trio' ]]; then
+  session="tmux new-session '${2:-bash}' \; split-window '${3:-bash}' \; select-layout even-horizontal \; split-window '${4:-bash}' \; $muxoptions"
+  bash -c "$session"
+elif [[ "$1" ]]; then
+  session="tmux new-session \"$1\"\;"
+  is odd "$#" && split="split-window\;"
+  [[ $3 ]] && layout='tiled' || layout="even-horizontal"; shift
+  function splitCommand { echo "$session split-window \"$@\"\;"; }; export -f splitCommand
+  bash -c "$session `each map splitCommand "$@"` $split select-layout $layout\; $muxoptions"
+else
+  bash -c "tmux new-session\; $muxoptions"
+fi
