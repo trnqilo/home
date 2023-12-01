@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+echo "$SUDO_USER $(sudo -u "$1" -H sh -lc 'printf %s "$HOME"' 2> /dev/null)" | \
+if read conduit_user conduit_home; then
+  echo $conduit_home $conduit_user
+
+  # if [[ -f "$conduit_home/.conduit" ]] && grep -q; then
+
+  # fi
+fi

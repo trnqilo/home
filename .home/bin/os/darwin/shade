@@ -1,0 +1,123 @@
+#!/usr/bin/env swift
+
+import AppKit
+
+let qKey: UInt16 = 0x0C     // 12
+let escKey: UInt16 = 0x35   // 53
+let downKey: UInt16 = 0x7D  // 125
+let upKey: UInt16 = 0x7E    // 126
+
+final class OverlayView: NSView {
+  var adjustOpacity: ((CGFloat) -> Void)?
+
+  override var acceptsFirstResponder: Bool {
+    true
+  }
+
+  override func scrollWheel(with event: NSEvent) {
+    guard event.scrollingDeltaY != 0 else {
+      return
+    }
+
+    adjustOpacity?(event.scrollingDeltaY > 0 ? 0.1 : -0.1)
+  }
+
+  override func keyDown(with event: NSEvent) {
+    switch event.keyCode {
+      case escKey, qKey:
+        NSApp.terminate(nil)
+      case upKey:
+        adjustOpacity?(-0.1)
+      case downKey:
+        adjustOpacity?(0.1)
+      default:
+        super.keyDown(with: event)
+    }
+  }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+  private var window: NSWindow!
+  private var opacity: CGFloat = 0.7
+
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    let initialRect = calculateInitialWindowRect()
+    let overlayView = createOverlayView(frame: NSRect(origin: .zero, size: initialRect.size))
+
+    window = NSWindow(
+      contentRect: initialRect,
+      styleMask: [
+        .titled,
+        .closable,
+        .miniaturizable,
+        .resizable
+      ],
+      backing: .buffered,
+      defer: false
+    )
+
+    window.contentView = overlayView
+    window.isOpaque = false
+    window.backgroundColor = .clear
+    window.hasShadow = true
+    window.level = .floating
+
+    window.collectionBehavior = [
+      .canJoinAllSpaces,
+      .fullScreenAuxiliary
+    ]
+
+    window.delegate = self
+
+    updateOpacity()
+
+    window.makeKeyAndOrderFront(nil)
+    window.makeFirstResponder(overlayView)
+
+    NSApp.activate(ignoringOtherApps: true)
+  }
+
+  private func calculateInitialWindowRect() -> NSRect {
+    guard let mainScreen = NSScreen.main else {
+      return NSRect(x: 100, y: 100, width: 800, height: 600)
+    }
+    let screenFrame = mainScreen.visibleFrame
+    let width = screenFrame.width * 0.6
+    let height = screenFrame.height * 0.6
+    let x = screenFrame.minX + (screenFrame.width - width) / 2
+    let y = screenFrame.minY + (screenFrame.height - height) / 2
+    return NSRect(x: x, y: y, width: width, height: height)
+  }
+
+  private func createOverlayView(frame: NSRect) -> OverlayView {
+    let view = OverlayView(frame: frame)
+    view.wantsLayer = true
+    view.layer?.backgroundColor = NSColor.black.cgColor
+    view.autoresizingMask = [.width, .height]
+    view.adjustOpacity = { [weak self] amount in
+      self?.changeOpacity(by: amount)
+    }
+    return view
+  }
+
+  private func changeOpacity(by amount: CGFloat) {
+    opacity = min(max(opacity + amount, 0.2), 0.8)
+    opacity = (opacity * 10).rounded() / 10
+
+    updateOpacity()
+  }
+
+  private func updateOpacity() {
+    window.alphaValue = opacity
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    NSApp.terminate(nil)
+  }
+}
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.setActivationPolicy(.regular)
+app.delegate = delegate
+app.run()

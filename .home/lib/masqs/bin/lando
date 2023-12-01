@@ -1,0 +1,62 @@
+
+guest_status() {
+  local ip="$1"
+  local has_masq has_block
+
+  # check for a FORWARD DROP rule
+  has_block=$(iptables -t filter -L FORWARD -n --line-numbers 2>/dev/null \
+    | awk -v ip="$ip" '$3=="DROP" && $5==ip {found=1} END {print (found ? "1" : "0")}')
+
+  # check for a MASQUERADE rule in nat POSTROUTING
+  has_masq=$(iptables -t nat -L POSTROUTING -n 2>/dev/null \
+    | awk -v ip="$ip" '$1=="MASQUERADE" && $5==ip {found=1} END {print (found ? "1" : "0")}')
+
+  if [[ "$has_block" == 1 ]]; then echo "blocked"
+  elif [[ "$has_masq" == 1 ]]; then echo "allowed"
+  else echo "unknown"; fi
+}
+
+guest_allow() {
+  local ip="$1"
+  local iface="${2:-eth0}"
+  local status
+  status=$(guest_status "$ip")
+
+  case "$status" in
+    allowed)
+      echo "$ip is already allowed."
+      ;;
+    blocked)
+      # lift the FORWARD DROP, then ensure MASQUERADE exists
+      iptables -D FORWARD -s "$ip" -j DROP
+      iptables -t nat -C POSTROUTING -s "$ip" -o "$iface" -j MASQUERADE 2>/dev/null \
+        || iptables -t nat -A POSTROUTING -s "$ip" -o "$iface" -j MASQUERADE
+      echo "$ip unblocked and allowed."
+      ;;
+    unknown)
+      iptables -t nat -A POSTROUTING -s "$ip" -o "$iface" -j MASQUERADE
+      echo "$ip added and allowed."
+      ;;
+  esac
+}
+
+guest_deny() {
+  local ip="$1"
+  local status
+  status=$(guest_status "$ip")
+
+  case "$status" in
+    blocked)
+      echo "$ip is already blocked."
+      ;;
+    allowed)
+      iptables -I FORWARD 1 -s "$ip" -j DROP
+      echo "$ip blocked."
+      ;;
+    unknown)
+      echo "$ip has no rules — nothing to block."
+      ;;
+  esac
+}
+
+guest_$@
