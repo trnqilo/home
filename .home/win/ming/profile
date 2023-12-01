@@ -1,0 +1,11 @@
+
+if [[ "$OS" == 'msys'* || "$OS" == 'cygwin' ]]; then export whereami='windows'; fi
+
+if [[ "$whereami" == 'windows' ]]; then
+  export packages='rsync gcc procps-ng diffutils mingw-w64-ucrt-x86_64-bat'
+  export psh_history="$APPDATA/Microsoft/Windows/PowerShell/PSReadLine/ConsoleHost_history.txt"
+  export PATH="/usr/bin:$PATH"
+  alias winvars='rundll32 sysdm.cpl,EditEnvironmentVariables'
+  alias hypervset='bcdedit -set hypervisorlaunchtype' # auto
+  alias fin='taskkill /f /fi "USERNAME eq $USERNAME"'
+fi

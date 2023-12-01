@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+source /etc/default/housesitter
+if [[ -f "$UPLOAD_SCRIPT" ]]; then "$UPLOAD_SCRIPT" "$@"; fi

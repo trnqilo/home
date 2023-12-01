@@ -1,0 +1,164 @@
+<application>
+  <component name="CodeFoldingSettings">
+    <option name="COLLAPSE_IMPORTS" value="false" />
+    <option name="COLLAPSE_FILE_HEADER" value="false" />
+  </component>
+  <component name="CodeVisionSettings">
+    <option name="codeVisionGroupToPosition">
+      <map>
+        <entry key="change.signature" value="Default" />
+        <entry key="component.usage" value="Default" />
+        <entry key="inheritors" value="Default" />
+        <entry key="llm" value="Default" />
+        <entry key="problems" value="Default" />
+        <entry key="references" value="Default" />
+        <entry key="rename" value="Default" />
+        <entry key="vcs.code.vision" value="Default" />
+      </map>
+    </option>
+    <option name="defaultPosition" value="Right" />
+    <option name="disabledCodeVisionProviderIds">
+      <set>
+        <option value="change.signature" />
+        <option value="component.usage" />
+        <option value="inheritors" />
+        <option value="llm" />
+        <option value="problems" />
+        <option value="references" />
+        <option value="rename" />
+        <option value="vcs.code.vision" />
+      </set>
+    </option>
+    <option name="enabled" value="false" />
+  </component>
+  <component name="DeclarativeInlayHintsSettings">
+    <option name="enabledOptions">
+      <map>
+        <entry key="java.annotation.hints#showExternal" value="false" />
+        <entry key="java.annotation.hints#showInferred" value="false" />
+        <entry key="js.type.hints#function.returns" value="false" />
+        <entry key="js.type.hints#non.paren.single.param" value="false" />
+        <entry key="js.type.hints#parameters.in.parens" value="false" />
+        <entry key="js.type.hints#variables.and.fields" value="false" />
+        <entry key="kotlin.lambdas.hints#hints.lambda.receivers.parameters" value="false" />
+        <entry key="kotlin.lambdas.hints#hints.lambda.return" value="false" />
+        <entry key="kotlin.parameters.hints#hints.parameters.compiled" value="true" />
+        <entry key="kotlin.parameters.hints#hints.parameters.excluded" value="false" />
+        <entry key="kotlin.references.types.hints#hints.type.function.parameter" value="false" />
+        <entry key="kotlin.references.types.hints#hints.type.function.return" value="false" />
+        <entry key="kotlin.references.types.hints#hints.type.property" value="false" />
+        <entry key="kotlin.references.types.hints#hints.type.variable" value="false" />
+        <entry key="kotlin.values.hints#hints.value.kotlin.time" value="false" />
+        <entry key="kotlin.values.hints#hints.value.ranges" value="false" />
+        <entry key="sql.column.names.inlay.hints#sql.show.column.names.for.asterisk" value="false" />
+        <entry key="sql.column.names.inlay.hints#sql.show.column.names.for.set.operations" value="false" />
+        <entry key="sql.column.names.inlay.hints#sql.show.column.names.in.insert.values" value="false" />
+        <entry key="sql.column.names.inlay.hints#sql.show.column.names.in.select" value="false" />
+        <entry key="sql.join.cardinality.hints#full.join" value="false" />
+        <entry key="sql.join.cardinality.hints#inner.join" value="false" />
+        <entry key="sql.join.cardinality.hints#left.join" value="false" />
+        <entry key="sql.join.cardinality.hints#right.join" value="false" />
+        <entry key="ts.type.hints#function.returns" value="false" />
+        <entry key="ts.type.hints#non.paren.single.param" value="false" />
+        <entry key="ts.type.hints#parameters.in.parens" value="false" />
+        <entry key="ts.type.hints#variables.and.fields" value="false" />
+      </map>
+    </option>
+    <option name="providerIdToEnabled">
+      <map>
+        <entry key="groovy.implicit.null.argument" value="false" />
+        <entry key="groovy.lambda.parameter.inlay.provider" value="false" />
+        <entry key="groovy.local.variable.implicit.types" value="false" />
+        <entry key="java.annotation.hints" value="false" />
+        <entry key="java.implicit.lambdaParameter" value="false" />
+        <entry key="java.implicit.types" value="false" />
+        <entry key="java.method.chains" value="false" />
+        <entry key="js.chain.hints" value="false" />
+        <entry key="js.type.hints" value="false" />
+        <entry key="kotlin.compiler.plugins.modality" value="false" />
+        <entry key="kotlin.compiler.plugins.supertypes" value="false" />
+        <entry key="kotlin.lambdas.hints" value="false" />
+        <entry key="kotlin.method.chains" value="false" />
+        <entry key="kotlin.parameters.hints" value="false" />
+        <entry key="kotlin.references.types.hints" value="false" />
+        <entry key="kotlin.values.hints" value="false" />
+        <entry key="open.rewrite.recipe" value="false" />
+        <entry key="qodana.yaml.inspection.descriptions" value="false" />
+        <entry key="sql.column.names.inlay.hints" value="false" />
+        <entry key="sql.join.cardinality.hints" value="false" />
+        <entry key="ts.chain.hints" value="false" />
+        <entry key="ts.enum.hints" value="false" />
+        <entry key="ts.type.hints" value="false" />
+      </map>
+    </option>
+  </component>
+  <component name="EditorSettings">
+    <option name="IS_FOLDING_OUTLINE_SHOWN" value="false" />
+  </component>
+  <component name="InlayHintsSettings">
+    <option name="disabledHintProviderIds">
+      <set>
+        <option value="Declarative.cron.inlay" />
+        <option value="Declarative.microservices.url.path.inlay.hints" />
+        <option value="Dockerfile.docker.inlay.hints" />
+        <option value="Groovy.cron.inlay" />
+        <option value="Groovy.ktor.add.plugins.gradle" />
+        <option value="Groovy.microservices.url.path.inlay.hints" />
+        <option value="Groovy.quarkus.edit.extensions.gradle" />
+        <option value="Groovy.spring.boot.generate.starters.gradle" />
+        <option value="JAVA.annotation.hints" />
+        <option value="JAVA.cron.inlay" />
+        <option value="JAVA.microservices.url.path.inlay.hints" />
+        <option value="JAVA.spring.boot.data.aot.method.query" />
+        <option value="JAVA.spring.secured.urls.inlay.hints" />
+        <option value="Markdown.MarkdownTableInlayProviderSettingsKey" />
+        <option value="Properties.cron.inlay" />
+        <option value="XML.ktor.add.plugins.maven" />
+        <option value="XML.quarkus.edit.extensions.maven" />
+        <option value="XML.spring.boot.generate.starters.maven" />
+        <option value="XML.spring.secured.urls.inlay.hints" />
+        <option value="kotlin.cron.inlay" />
+        <option value="kotlin.ktor.add.plugins.gradle.kts" />
+        <option value="kotlin.microservices.url.path.inlay.hints" />
+        <option value="kotlin.quarkus.edit.extensions.gradle.kts" />
+        <option value="kotlin.spring.boot.data.aot.method.query" />
+        <option value="kotlin.spring.boot.generate.starters.gradle.kts" />
+        <option value="kotlin.spring.secured.urls.inlay.hints" />
+        <option value="yaml.cron.inlay" />
+      </set>
+    </option>
+    <option name="lastViewedProviderKeyId" value="" />
+    <settingsMapElement>
+      <JAVA.annotation.hints>
+        <Settings>
+          <option name="showExternal" value="false" />
+        </Settings>
+      </JAVA.annotation.hints>
+    </settingsMapElement>
+  </component>
+  <component name="JavaCodeFoldingSettings">
+    <option name="collapseConstructorGenericParameters" value="false" />
+    <option name="collapseI18nMessages" value="false" />
+    <option name="collapseLambdas" value="false" />
+    <option name="collapseOneLineMethods" value="false" />
+    <option name="collapseSuppressWarnings" value="false" />
+  </component>
+  <component name="JpaQlFoldingSettings">
+    <option name="COLLAPSE_JPA_QUERIES" value="false" />
+  </component>
+  <component name="KubernetesFoldingSettings">
+    <option name="COLLAPSE_HELM_VALUES" value="false" />
+    <option name="COLLAPSE_ENV_VARS" value="false" />
+    <option name="COLLAPSE_EXEC_ACTIONS" value="false" />
+  </component>
+  <component name="MarkdownCodeFoldingSettings">
+    <option name="collapseFrontMatter" value="false" />
+    <option name="collapseLinks" value="false" />
+    <option name="collapseTableOfContents" value="false" />
+  </component>
+  <component name="XmlFoldingSettings">
+    <option name="COLLAPSE_HTML_STYLE_ATTRIBUTE" value="false" />
+    <option name="COLLAPSE_ENTITIES" value="false" />
+    <option name="COLLAPSE_DATA_URI" value="false" />
+  </component>
+</application>

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$2" ]]; then "$0" "$1" | grep "^${2}$"
+else curl -sSfL "$1" 2>/dev/null; fi
