@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set  -e
+
+if [[ "$1" =~ ^n(eighbor)?$ ]]; then
+  if type ip &>/dev/null; then ip n | sudo nslookup; fi
+  if type arp &>/dev/null; then sudo arp -a; fi
+  exit
+elif [[ "$1" == 'a' ]]; then shift; fi
+
+if type ifconfig &>/dev/null; then print_interface_data='ifconfig'
+elif type ipconfig &>/dev/null; then print_interface_data='ipconfig'
+else print_interface_data='ip a'; fi
+
+$print_interface_data | ([[ "$1" ]] && grep -E "$@" || cat)
