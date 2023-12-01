@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" ]]; then IFS=: read host dest <<< "$1"; fi
+
+if [[ "$2" ]]; then shift; IFS=: read port inbound <<< "$1"; fi
+
+inbound=${inbound:-$port}
+dest=${dest:-$host}
+
+if [[ "$port" && "$host" ]]; then
+  (( 1024 < inbound )) || sudo=sudo
+  $sudo ssh -N -L $inbound:$dest:$port $host "$@"
+else
+  echo $'tunnel host port\ntunnel host:dest port:inbound'
+fi
+
+# ssh -D $port $host # dynamic tunnel using SOCKS proxy
