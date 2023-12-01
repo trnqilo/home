@@ -1,0 +1,13 @@
+#!/usr/bin/env pwsh
+
+if ($args) {
+  foreach ($arg in $args) {
+    Write-Host $arg
+  }
+}
+
+if ($input) {
+  $input | ForEach-Object {
+    Write-Host $_
+  }
+}
