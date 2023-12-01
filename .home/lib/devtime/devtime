@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -e
+
+dt_home="${DEVTIME:-$HOME/.devtime}"
+work_hours=${work_hours:-40} # WARNING: increase may cause side effects
+function _dt_- {
+  if is_afk; then echo 'currently afk'
+  elif ! [[ "$1" ]]; then vim '+normal G' "$log_file"; _dt_up
+  elif task_started; then write_log "${indent:-  }${bullet:--} $@"
+  else echo 'task not yet started'; fi
+}
+function _dt_+ {
+  if task_started; then task_end $1; fi
+  task_start `new_start $1` $@
+}; _dt_... () { _dt_+ $@; }
+function _dt_gg {
+  if tail -1 "$log_file" | grep -q '^#.*hours$'; then echo 'day already ended'
+  elif ! task_started && ! task_ended; then echo 'no tasks'
+  else { if task_started; then task_end $1; fi }
+    write_log "# `new_start` `tasks_hours` hours"
+  fi
+}
+function _dt_shell { local p=`printf '\e[0;95m>\e[0;67m '` input=; _dt_up
+  if [[ "$1" =~ ^d(ebug)?$ ]]; then while :; do read -rep "${p/>/%}" eval; eval $eval ||:; done;
+  else until [[ "$input" =~ ^q(uit)?$ ]]; do trap t INT;t()(tmux kill-session)
+    if [[ ! "$input" ]]; then :
+    elif [[ "$input" == '--'* ]]; then $0 indent $input
+    elif [[ "$input" == 'debug' ]]; then _dt_shell d
+    elif type _dt_${input%% *} &>/dev/null; then $0 $input
+    else $0 - $input; fi
+    read -rep "$p" input
+  done; t; fi
+}
+function task_start { local time=
+  if task_started; then echo 'task already started'; return
+  else time="$1"; shift; fi
+  if [[ "$1" ]]; then revert_gg; write_log "+ $time $@"
+  else echo 'no task name provided'; fi
+}
+function task_end {
+  if task_ended; then echo 'task already ended'
+  elif ! task_started; then echo 'task not yet started'
+  else write_log "  + `task_hours $1` hours"; fi
+}
+function week {
+  local today=$( hours $log_file | add $( if ! is_afk; then task_hours; fi ) )
+  local total=$( for (( day=`date +%u`; day>0; --day )); do hours "`date +%Y.%m.%d -d -${day}days`.md"
+  done | add_all | add $today | round ); local left=`gawk '{print $1-$2}'<<<"$work_hours $total"`
+  if gawk '{print $1<8}' <<< $left | grep -q '^1$'; then local day_length=$left; fi
+  local eod=$( date -d "`start_time` `afk | add ${day_length:-8} | hour_to_sec` second" +%R )
+  echo "# $today hours, $total total, $left left, $eod eod"
+}
+function write_log {
+  if [[ "$1" ]]; then { if ! log_exists; then echo "# $date `date +%A`" > "$log_file"; fi }
+    echo "$@" >> "$log_file"; _dt_up "$@"
+  fi
+}
+function _dt_go { tmux a > /dev/null 2>&1 || tmux new-session 'devtime watch' \; split-window 'devtime shell' \; select-layout even-horizontal \; set-option -g status-bg cyan\; set-option -g pane-border-style fg=cyan\; set-option -g pane-active-border-style fg=cyan\; set-option -g status-right '%m/%d/%y %H:%M'\;; }
+function _dt_up { if [[ ! -d '.git' ]]; then :; elif git status | grep 'nothing to commit' &>/dev/null; then git pull &>/dev/null; else local m="${@:-`date`}"; ( git pull && git add -A && git commit -m "$m" && git push origin HEAD -u ) &>/dev/null || echo 'repo update failed'; fi; }
+function _dt_print { (week && _dt_quests && log_exists && cat "$log_file") | tags | _dt_format; };
+function _dt_watch { watch -tcn3 $0 print; };
+function _dt_code { code "$dt_home" "$log_file" &>/dev/null; };
+function _dt_history { task_history | _dt_format; }
+function _dt_pop { if tail -1 "$log_file" | grep -E '^  .*$|^#.*hours$|^\+ .*$' | GREP_COLORS='ms=9' grep --color=always '^.*$'; then pop; if [[ "$1" == '2' ]]; then _dt_pop; else _dt_up pop; fi;fi; };
+function _dt_afk { _dt_+ $1 afk; }
+function _dt_forever { local d=`lslogs 2>/dev/null | wc -l` p='{print "# "$1" hours, "$days" days, "$1/$days" average"}'; lslogs 2>/dev/null | while read l; do hours "$l"; done | add_all | gawk "${p//'$days'/$d}" 2>/dev/null || echo '# 0 days' | _dt_format; }
+function _dt_quests { lslogs &> /dev/null || return; local q="`cat *.md | grep '  \* '`"; if [[ "$q" ]]; then echo -e '\n# quests';echo "${q//'    *'/'*'}" | _dt_format; echo; fi; };
+function _dt_tag { if [[ "$1" ]]; then while [[ "$1" ]]; do echo "$1" >> .tags; shift; done; else vim .tags; fi; _dt_up tags; }
+function _dt_format { local print="`cat`";print="${print//' _'/" \e[0;95m"}";print="${print//'_'/"\e[0;67m"}";print="${print//' `'/" \e[0;96m"}";print="${print//'`'/"\e[0;67m"}";print="${print//'# '/"\e[0;95m#\e[0;67m "}";print="${print//'* '/"\e[0;95m*\e[0;67m "}";print="${print//'  - '/"  \e[0;96m-\e[0;67m "}";echo -e "${print//'+ '/"\e[0;96m+\e[0;67m "}"; }
+function _dt_indent { local replace="$1 " indent="$1" message="$@"; indent="${indent//-/  }" _dt_- "${message/$replace/}"; };
+function _dt_? { bullet='*' _dt_- "$@";  };
+function _dt_logcat { cat `lslogs | grep -E ".*$1.*"`; }
+function _dt_validate ( echo "${1:-`lslogs`}" | while read l; do l=${l//'./'/};printf "${l/.md/} ";h='^  +.*hours$';grep "$h" "$l" | gawk '{print $2}' | add_all | sub `grep -E '^\+ .* afk$' -A1 "$l" | grep "$h" | gawk '{print $2}' | add_all` | gawk "{print \$1 == `tail -1 "$l" | gawk '{print $3}'` }"; done | sed "s/^.* 0$/# &/g" | sed "s/^.* 1$/+ &/g" | gawk '{print $1" "$2}' | _dt_format )
+function tags { local print="`cat`"; if [[ -f .tags ]]; then local tags="`cat .tags`"; for tag in $tags; do print=$(sed "s/\b$tag[^ ]*\b/\`&\`/g"<<<$print); done; fi; sed "s/\([+@#!]\)[^ ]*\b/_&_/g"<<<"$print"; }
+function lslogs { ls -1 ./[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9].md; };
+function revert_gg { if log_exists && tail -1 "$log_file" | grep -q '^#.*hours$'; then pop; fi; }
+function task_history { log_exists && grep -E '^\+ [0-9]{2}:[0-9]{2} |^  \+.*[0-9] hours$' "$log_file"; };
+function hour_to_sec { cat | gawk '{print int(60*60*$1)}'; }
+function task_started { task_history | tail -1 | grep -q '^+ [0-9]'; };
+function task_ended { task_history | tail -1 | grep -q '^  +.*[0-9] hours$'; }
+function task_hours { if task_started; then calc_hours $1; fi; };
+function tasks_hours { task_history | grep '^  +' | gawk '{print $2}' | add_all | sub `afk` | round; }
+function calc_hours { date +%s -d `task_history | tail -1 | gawk '{print $2}'` | gawk "{print (`time_offset $1`-\$1)/60/60}" | round; }
+function time_offset { if is_time $1; then date +%s -d $(date +%R -d $1); else date +%s; fi; };
+function start_time { task_history | head -1 | gawk '{print $2}'; }
+function new_start { if is_time "$1"; then date +%R -d $1; elif task_ended; then date -d "`completed_time` `completed_sec` seconds" +%R; else date +%R; fi; }
+function completed_time { task_history | tail -2 | head -1 | gawk '{print $2}'; };
+function completed_sec { task_history | tail -1 | gawk '{print $2}' | hour_to_sec; }
+function is_time { [[ "$1" =~ ^[0-9]{1,2}:[0-9]{2}$ ]]; };
+function is_value { [[ "$1" =~ ^[0-9]+(\.[0-9]+)?$ ]]; }
+function afk { local f="${1:-$log_file}"; if [[ -f "$f" ]]; then grep -E '^\+ .* afk$' -A1 "$f" | grep '^  +.*[0-9] hours$' | gawk '{print $2}' | add_all; else echo 0; fi; }
+function is_afk { log_exists && tail -1 "$log_file" | grep -q ' afk$'; };
+function log_exists { [[ -f "$log_file" ]]; }
+function hours { if [[ -f "$@" ]]; then grep '^  +.*hours$' "$@" | gawk '{print $2}' | add_all | sub `afk "$@"`; else echo 0; fi; }
+function add_all { local total=; while read value; do total+="+$value"; done; gawk "{print 0$total}" <<< :; }
+function add { cat | gawk "{print ${1:-0}+\$1}"; };
+function sub { cat | add "-${1:-0}"; };
+function round { printf '%.*f\n' ${1:-2} `cat`; }
+function pop { if log_exists; then local log="`cat "$log_file" | gawk 'NR>1{print buf}{buf=$0}'`"; echo "$log" > "$log_file"; fi; }
+date=`date '+%Y.%m.%d'`; log_file="./$date.md"
+mkdir -p "$dt_home" && cd "$dt_home"
+if [[ ! "$1" ]]; then _dt_go; elif type _dt_$1 &>/dev/null; then _dt_$@; else echo "unknown command: $@"; fi

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$whereami" == 'darwin' || "$whereami" == *'bsd' ]]; then sysctl -n hw.ncpu
+elif [[ "$whereami" == 'windows' ]]; then echo "$NUMBER_OF_PROCESSORS"
+else lscpu | grep '^CPU(s): \+[1-9]\+$' | gawk '{print $2}'
+fi

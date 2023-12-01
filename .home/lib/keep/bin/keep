@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'devtime' ]]; then
+  function round { printf '%.*f\n' 2 `cat`; }
+  function conv_task ( time=$2; shift 4; echo "+ $time $@"; )
+  cd "$KEEP/log"
+  target="$HOME/.devtime"; mkdir -p "$target"
+  ls -1 *.*.*.md | while read log; do
+    echo "# ${log/.md/} $(date +%A -d @`head -1 $log | gawk '{print $2}'`)" > "$target/$log"
+    grep '+ .*$' $log | tail +2 | while IFS= read line; do
+      line="${line//'  + '/'  - '}"
+      if [[ "$line" =~ ^'+ '.*$ ]]; then
+        if [[ "$hours" ]]; then echo "  + $hours hours" >> "$target/$log"; fi
+        hours="`gawk '{print $4}' <<< "$line" | round`"
+        if ! [[ "$line" =~ ^'+ '.*'hours'$ ]]; then
+          conv_task $line >> "$target/$log"
+        fi
+      else
+        echo "$line" >> "$target/$log"
+      fi
+    done
+
+    end_time=`grep '+ .*$' $log | tail -1 | gawk '{print $2}'`
+    end_hours=`grep '+ .*$' $log | tail -1 | gawk '{print $4}' | round`
+    echo "# $end_time $end_hours hours">> "$target/$log"
+  done
+elif [[ "$1" ]]; then
+  [[ ! "$DATE" ]] && export DATE=`date '+%Y.%m.%d'`
+  [[ ! "$LOGFILE" ]] && export LOGFILE="$KEEP/log/$DATE.md"
+  [[ ! "$YEAR" ]] && YEAR=`date +%Y`
+  [[ ! "$YEAR_FILE" ]] && YEAR_FILE="$KEEP/log/$YEAR.md"
+  [[ ! "$NOTES" ]] && export NOTES="$KEEP/notes"
+  [[ ! "$TODOFILE" ]] && export TODOFILE="$NOTES/todo.md"
+  [[ ! -d "$KEEP/log" ]] && mkdir -p "$KEEP/log/"
+  [[ ! -d "$KEEP/shell" ]] && mkdir -p "$KEEP/shell/"
+  [[ ! -d "$NOTES" ]] && mkdir -p "$NOTES"
+  [[ ! "$KEEP_COLOR" ]] && export KEEP_COLOR="`ansicode "bright,$PROMPT_COLOR"`"
+  [[ ! "$KEEP_ACCENT" ]] && export KEEP_ACCENT="`ansicode "bright,$PROMPT_ACCENT"`"
+  source "$DOTHOME/lib/keep/logs"
+  source "$DOTHOME/lib/keep/time"
+  source "$DOTHOME/lib/keep/day"
+  source "$DOTHOME/lib/keep/util"
+  $@
+fi

@@ -1,0 +1,55 @@
+#!/usr/bin/env groovy
+
+@Grab(group = 'org.apache.poi', module = 'poi-ooxml', version = '5.2.3')
+
+import org.apache.poi.ss.usermodel.*
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+
+import static java.net.URI.create
+import static java.net.http.HttpClient.newHttpClient
+import static java.net.http.HttpRequest.newBuilder
+import static java.net.http.HttpResponse.BodyHandlers.ofString
+
+def accountColumnName = 'Account #'
+def balanceColumnName = 'Balance'
+def baseColumnName = 'Base Amount'
+def filePath = './example.xlsx'
+def workbook = new XSSFWorkbook(new File(filePath))
+def sheet = workbook.getSheetAt 0
+def headers = sheet.getRow 0
+
+headers.cellIterator().each { cell ->
+  switch (cell.stringCellValue) {
+    case accountColumnName -> accountColumnIndex = cell.columnIndex
+    case balanceColumnName -> balanceColumnIndex = cell.columnIndex
+    case baseColumnName -> baseColumnIndex = cell.columnIndex
+  }
+}
+
+def getRowData(Row row) {
+  [row.getCell(accountColumnIndex), row.getCell(balanceColumnIndex), row.getCell(baseColumnIndex)]
+}
+
+def callApi(row) {
+  def (account, balance, base) = getRowData row
+  println "${account} ${balance} ${base}"
+
+  newHttpClient().tap {
+    def request = newBuilder()
+        .uri(create("https://api.example.com/v123/${account}"))
+        .header("User-Agent", "Java-HttpClient")
+        .GET()
+        .build()
+    try {
+      send(request, ofString()).tap {
+        println "$account: ${statusCode()} ${body()}"
+      }
+    } catch (Exception e) {
+      println "$account: ${e.message}"
+    }
+  }
+}
+
+sheet.each { if (it.rowNum) callApi it }
+
+workbook.close()

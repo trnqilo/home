@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+easyserv
+easyserv server.json

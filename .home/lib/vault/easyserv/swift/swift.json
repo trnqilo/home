@@ -1,0 +1,12 @@
+[
+  {
+    "path": "hello",
+    "method": "GET",
+    "response": "Hello, World!"
+  },
+  {
+    "path": "goodbye",
+    "method": "POST",
+    "response": "Goodbye!"
+  }
+]

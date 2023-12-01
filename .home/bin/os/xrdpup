@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set  -e
+
+if [[ "$whereami" == 'linux' && ! -f "$HOME/.xsession" ]]; then
+  echo "${xsession:-xfce4-session}" > "$HOME/.xsession"
+elif [[ "$whereami" == *'bsd' && ! -f "$HOME/.xinitrc" ]]; then
+  echo 'source /usr/local/etc/xdg/xfce4/xinitrc' > "$HOME/.xinitrc"
+  # sudo pw groupmod video -m "$USER"
+  # sudo pw groupmod wheel -m "$USER"
+  # sudo sysrc dbus_enable="YES"
+fi
+
+sudo perl -pi -e s/009cb5/232323/g /etc/xrdp/xrdp.ini

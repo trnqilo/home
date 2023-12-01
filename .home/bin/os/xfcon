@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ ! "$1" ]]; then echo 'usage: xfcon save|apply'; exit 1; fi
+
+xfcon_local="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml"
+xfcon_home="$DOTHOME/conf/xfconf"
+
+function _xfcon_save { copy_xmls "$xfcon_local" "$xfcon_home"; }
+
+function _xfcon_apply { mkdir -p "$xfcon_local"; copy_xmls "$xfcon_home" "$xfcon_local"; }
+
+function copy_xmls {
+  cp -v "$1/thunar.xml" "$2"
+  cp -v "$1/xfce4-keyboard-shortcuts.xml" "$2"
+  cp -v "$1/xfwm4.xml" "$2"
+}
+
+_xfcon_$1

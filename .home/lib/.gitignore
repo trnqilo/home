@@ -1,0 +1,12 @@
+target/
+.idea/
+*.iml
+Cargo.lock
+groovy*.jar
+.DS_Store
+.build/
+Packages/
+xcuserdata/
+DerivedData/
+.swiftpm/
+.netrc

@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+function home { cod "$KEEP"; }
+function notes { cod "$NOTES"; }
+
+function year { 
+  if [[ ! -f "$YEAR_FILE" ]]; then echo -e "## $YEAR\n" > "$YEAR_FILE"; fi
+  if [[ "$1" ]]; then echo "+ `date '+%m/%d'` - $@" >> "$YEAR_FILE"
+  else secretly "code '$KEEP/log' '$YEAR_FILE'"; fi
+}
+
+function todo {
+  touch "$TODOFILE"
+  todos="`grep '^  +\|^  -' "$TODOFILE"`"
+  echo "`echo "$todos" | wc -l | gawk '{print $1}'` todos
+$todos"
+}
+
+function todos { cod "$NOTES/todo.md"; }
+
+function log_shell {
+    if is any "$1" 'gg' 'up' 'fin' 'oops' 'notes' 'pto' 'home' '-' '--' '---' '...'
+      then clear && $@
+    else
+      keeplog $@ && clear
+    fi
+}
+
+function shell {
+  touch "$KEEP/profile"; source "$KEEP/profile"; plush keep log_shell
+}
+
+function up { quietly homeup; }
+
+function - { vim '+normal G' "$LOGFILE" && up; }
+
+function -- { secretly "code '$KEEP/log'"; }
+
+function --- { secretly "code '$KEEP/log' '$LOGFILE'"; }
+
+function dash { cd "$KEEP/shell"
+  TOTAL_DAYS="`days`" PROMPT_ICON="+" PROMPT_ICON_COLOR="gray"  mux triple \
+    'keep logcat 3' \
+    'keep timer 3' \
+    'keep shell'
+}
+
+function formatmessage {
+  local message="$@"
+  message="${message//'+ '/"  \e[0;90m+\e[0;67m "}"
+  message="${message//'  -'/"    \e[0;90m-\e[0;67m"}"
+  message="${message//' - '/" \e[0;90m-\e[0;67m "}"
+  message="${message//'_#_ '/"\e[0;${KEEP_COLOR}_#_\e[0;67m "}"
+  message="${message//'**'/"\e[0;5m**\e[0;67m"}"
+  message="${message//'!!'/"\e[0;${KEEP_COLOR}!!\e[0;67m"}"
+  if [[ "$show_tags" ]]; then
+    local tags=($KEEPTAGS $KEEPTASKS 'afk')
+    for tag in "${tags[@]}"; do
+      message="${message//" $tag"/" \e[0;${KEEP_ACCENT}$tag\e[0;67m"}"
+      message="${message//"/$tag"/"/\e[0;${KEEP_ACCENT}$tag\e[0;67m"}"
+      message="${message//"-$tag"/"-\e[0;${KEEP_ACCENT}$tag\e[0;67m"}"
+      message="${message//"+$tag"/"+\e[0;${KEEP_ACCENT}$tag\e[0;67m"}"
+      message="${message//":$tag"/":\e[0;${KEEP_ACCENT}$tag\e[0;67m"}"
+    done
+  fi
+  echo -e " \n$message" | grep -v '<!--\|###\|-->\|^$'
+}
+
+function validate {
+  if [[ ! "$1" ]]; then cd "$KEEP/log/"
+    logs="`ls *.*.*.md`"; logs=($logs) days=0
+    for log in "${logs[@]}"; do 
+      validate "$log"; let ++days
+    done
+    echo -e "\n$days days validated\n"
+    return
+  elif [[ ! -f "$1" ]]; then 
+    parrot magenta "$1 not found"; return 1
+  fi
+  log="$1"; logdata="`cat "$log"`" logname=${log/".md"/}
+  ! is same "`echo "$logdata" | tail -n1 | gawk '{print $2}'`" "-->" \
+    && parrot yellow "`char -` $logname:\n    active" && return
+  start="`echo "$logdata" | head -n1 | gawk '{print $2}'`"
+  startdate="`echo "$logdata" | head -n2 | tail -n1 | gawk '{print $2}'`"
+  starttime="`echo "$logdata" | head -n4 | tail -n1 | gawk '{print $2}'`"
+  end="`echo "$logdata" | tail -n7 | gawk '{print $2}' | head -n1`"
+  endtime="`echo "$logdata" | grep '[[:digit:]] hours$' | tail -n1 | gawk '{print $2}'`"
+  afk="`echo "$logdata" | tail -n3 | gawk '{print $1}' | head -n1`"
+  afkcalc="`echo "$logdata" | grep '[[:digit:]] afk$' | gawk '{print \$4}'`"
+  afkcalc="`add $afkcalc`"
+  total="`echo "$logdata" | tail -n1 | gawk '{print $1}'`" ; total="`round 2 $total`"
+  totalcalc="`clac "(($end-$start)/60.00000/60.00000)-$afk"`" ; totalcalc="`round 2 $totalcalc`"
+  weektotal="`echo "$logdata" | tail -n5 | head -n1 | gawk '{print $1+$3}'`"; weektotal="`round 2 $weektotal`"
+  error=''
+  is same "`date -d @$start +%D`" "$startdate" || error="$error  date: $startdate\n"
+  is same "`date -d @$start +%R`" "$starttime" || error="$error  start time: $starttime\n"
+  is same "`date -d @$end +%R`" "$endtime" || error="$error  end time: $endtime\n"
+  is equal $afkcalc $afk || error="$error  afk:\n    $afkcalc\n    $afk\n"
+  is equal $totalcalc $total || error="$error  total:\n    $total\n    $totalcalc\n"
+  is equal "$weektotal" '40' || error="$error  week total: $weektotal\n"
+  [[ ! "$error" ]] && parrot cyan "`char check` $logname" || parrot magenta "`char x` $logname:\n$error"
+}

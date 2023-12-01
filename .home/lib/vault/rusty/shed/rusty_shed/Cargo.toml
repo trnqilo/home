@@ -1,0 +1,9 @@
+
+[package]
+name = "rusty_shed"
+version = "123456.78.90"
+edition = "2021"
+
+[dependencies]
+rand = "*"
+tailcall = "0.1.6"

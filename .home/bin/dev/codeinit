@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$whereami" == 'darwin' ]]; then
+  cd "$HOMELIB/Application Support/Code/User"
+elif [[ "$whereami" == 'windows' ]]; then
+  cd "$APPDATA/Code/User"
+elif [[ "$whereami" == 'freebsd' ]]; then
+  cd "$HOME/.config/Code - OSS/User"
+else
+  cd "$HOME/.config/Code/User"
+fi
+
+if [[ -f 'settings.json' ]]; then surely 'overwrite VS Code settings'; fi
+
+cp "$DOTHOME/conf/code/settings.json" .
+echo 'settings saved.'

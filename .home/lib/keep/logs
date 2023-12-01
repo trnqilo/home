@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+# function week {
+#   local DAYOFWEEK=`date '+%u'`
+#   for (( DAY=DAYOFWEEK; DAY>=0; --DAY )); do
+#     local SUBDAYS="-"$DAY"days"
+#     local DAYLOG="$KEEP/log/"`date +%Y.%m.%d -d "$SUBDAYS"`".md"
+#     report "$DAYLOG"
+#   done
+# }
+
+# function report {
+#   if [[ "$1" ]]; then while [[ "$1" ]]; do
+#     local logfile="$1"; shift
+#     if ! is file "$logfile"; then return; fi
+#     local title="`grep '^### ' "$logfile"`"
+#     title="$title `grep '[[:digit:]] \- happy' "$logfile" | gawk '{print $5}'`"
+#     # local hours="+ hours: `grep '[[:digit:]] hours' "$logfile" | gawk '{print $4}'`"
+#     # local notes="`grep '+ notes: ' "$logfile"`"
+#     # notes="${notes//'notes: '/'\n  + '}"
+#     # notes="${notes//'. '/'\n  + '}"
+
+#     # echo -e "$title$dsu\n$hours\n$notes" | grep -v '^  + $'
+#     echo -e "$title"
+#     grep '^  + dsu' -A12 "$logfile" | \
+#     while read line; do
+#       if [[ "$line" =~ ^'   '.* ]]; then
+#         echo "$line"
+#       else break; fi
+#     done
+#   done
+#   else
+#     report "$KEEP/log/"*
+#   fi
+# }
+
+function quest {
+  local quests="`logscat | grep '??' | tac`"
+  if [[ "$quests" ]]; then
+    local ifsd="$IFS"; IFS=$'\n'; qarray=($quests); IFS="$ifsd"
+    local quests="${#qarray[@]} quests
+
+$quests
+"
+    quests=${quests//' ??'/}
+    quests=${quests//'      +'/'  +'}
+    quests=${quests//'    +'/'  +'}
+    echo "$quests"
+  fi
+}
+
+function logcat {
+  if [[ "$1" ]]; then
+    watch -tcn"$1" 'keep logcat'
+  else
+    message="`grep '+ ' "$LOGFILE"`";
+    show_tags='true' formatmessage "$message"
+  fi
+}
+
+function logscat { cat "$KEEP"/log/*; }
+
+function loggrep { grep "$@" --color=always "$LOGFILE"; }
+
+function logsgrep { logscat | grep "$@" --color=always; }
+
+function logtags {
+  local logtags="`logsgrep "${KEEPTAGS//' '/'\|'}"`"
+  echo "${logtags//'  '/''}"
+}
+
+function started { [[ -f "$LOGFILE" ]] || return 1; }
+
+function ended { [[ `tail -n1 "$LOGFILE" | grep -- '-->'` ]] || return 1; }
+
+function active { started && ! ended || return 1; }

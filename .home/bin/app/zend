@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! "$ZENDESK_ORG" ]] && echo 'ZENDESK_ORG not set.' && exit
+
+baseurl="https://$ZENDESK_ORG.zendesk.com"
+
+[[ ! "$1" ]] && open "$baseurl" || \
+while [[ "$1" ]]; do
+  open "$baseurl/agent/tickets/$1"
+  shift
+done

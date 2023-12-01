@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'new' ]]; then shift
+  server_config="${@:-"./server.json"}"
+  if [[ ! -f "$server_config" ]]; then
+    echo '{
+  "port": 1234,
+  "root": "/v1",
+  "apis": [
+    {
+      "method": "get",
+      "route": "/get/:item",
+      "response": { "key" : "value" }
+    },
+    {
+      "method": "put",
+      "route": "/put/:item",
+      "status": 201
+    },
+    {
+      "method": "post",
+      "route": "/post/:item",
+      "import": "post.js"
+    },
+    {
+      "method": "patch",
+      "route": "/patch",
+      "eval": "console.log('"'"'hello patch!'"'"')"
+    },
+    {
+      "method": "delete",
+      "route": "/delete/:item",
+      "shell": "rm ./nothing"
+    }
+  ]
+}' > "$server_config"; parrot green "config created: `ls "$server_config"`"
+  else
+    parrot yellow "config already exists: $server_config"
+  fi
+else
+  easyserv.${lang:-js} $@
+fi
