@@ -1,0 +1,7 @@
+[begin] ()
+	[exec] (firefox) {firefox}
+	[exec] (terminal) {xterm}
+	[exec] (files) {pcmanfm}
+	[exec] (code) {code}
+	[exit] (exit)
+[end]
