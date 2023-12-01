@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Usage:
+#   ./mic_toggle.sh          # Toggle mute state
+#   ./mic_toggle.sh mute     # Force mute
+#   ./mic_toggle.sh unmute   # Force unmute
+#   ./mic_toggle.sh status   # Print current state
+
+get_volume() {
+  osascript -e "input volume of (get volume settings)"
+}
+
+set_volume() {
+  osascript -e "set volume input volume $1"
+}
+
+print_status() {
+  local vol=$(get_volume)
+  if [[ ! "$vol" =~ ^[0-9]+$ ]]; then
+    echo "🔇 Mic is UNKNOWN"
+  elif [[ "$vol" -eq 0 ]]; then
+    echo "🔇 Mic is MUTED"
+  else
+    echo "🎙️ Mic is HOT"
+  fi
+}
+
+mute_mic() {
+  local vol=$(get_volume)
+  set_volume 0
+  echo "🔇 Mic MUTED"
+}
+
+unmute_mic() {
+  set_volume ${MICVOL:-50}
+  echo "🎙️ Mic HOT"
+}
+
+toggle_mic() {
+  local vol=$(get_volume) un
+  if [[ "$vol" == 0 ]]; then un=un; fi
+  ${un}mute_mic
+}
+
+case "${1:-status}" in
+  status)  print_status ;;
+  toggle)  toggle_mic ;;
+  mute)    mute_mic ;;
+  unmute)  unmute_mic ;;
+  t)       toggle_mic ;;
+  m)       mute_mic ;;
+  u)       unmute_mic ;;
+  *)
+    echo "Usage: `basename $0` [toggle|mute|unmute]"
+    exit 1 ;;
+esac

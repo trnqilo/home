@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+while [[ "$1" ]]; do archive="$1"; shift
+  zip -r "${archive%/}.zip" "$archive" -x "*.DS_Store" -x "*__MACOSX*" \
+    || echo -e "zip failed\n$archive"
+done

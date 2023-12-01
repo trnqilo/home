@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == '-q' ]]; then q=true; fi
+if [[ ! -t 0 ]]; then output="`cat`"
+else output="$@"; fi
+
+if type pbcopy &>/dev/null; then pbcopy<<<"$output"
+elif type clip &>/dev/null; then clip<<<"$output"
+elif type xclip &>/dev/null; then xclip<<<"$output"; fi
+[[ "$q" ]] || echo "$output"
