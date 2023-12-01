@@ -1,0 +1,12 @@
+no-resolv
+server=1.1.1.1
+server=8.8.8.8
+addn-hosts=/etc/masqs/hosts
+addn-hosts=/etc/masqs/hosts.block
+domain-needed
+bogus-priv
+dhcp-authoritative
+cache-size=1000
+localise-queries
+log-queries=no
+log-async=50

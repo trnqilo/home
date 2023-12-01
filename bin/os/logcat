@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [[ "$log" ]]; then :
+elif whereami darwin; then log='/var/log/system.log'
+else log='/var/log/syslog'; fi
+test -f "$log" || exit
+export grep="$@"
+tail -n${lines:-1000}  "$log" \
+  | ( if [[ "$grep" ]]; then grep --color=always -iE "$grep"; else cat; fi )
