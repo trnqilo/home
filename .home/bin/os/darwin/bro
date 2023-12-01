@@ -1,0 +1,127 @@
+#!/usr/bin/env swift
+
+import Cocoa
+import WebKit
+
+final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
+    private var window: NSWindow!
+    private var webView: WKWebView!
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let config = WKWebViewConfiguration()
+
+        webView = WKWebView(
+            frame: .zero,
+            configuration: config
+        )
+
+        webView.navigationDelegate = self
+        webView.allowsMagnification = true
+        webView.setValue(false, forKey: "drawsBackground")
+
+        let screenFrame = NSScreen.main?.visibleFrame
+            ?? NSRect(x: 100, y: 100, width: 1200, height: 800)
+
+        let frame = NSRect(
+            x: screenFrame.midX - 600,
+            y: screenFrame.midY - 400,
+            width: 1200,
+            height: 800
+        )
+
+        window = NSWindow(
+            contentRect: frame,
+            styleMask: [
+                .titled,
+                .closable,
+                .miniaturizable,
+                .resizable
+            ],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+
+        window.contentView = webView
+        window.makeKeyAndOrderFront(nil)
+
+        loadURL()
+
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func loadURL() {
+        var value = CommandLine.arguments.dropFirst().first ?? "https://google.com"
+
+        if !value.contains("://") {
+            value = "https://" + value
+        }
+
+        guard let url = URL(string: value) else {
+            fputs("Invalid URL: \(value)\n", stderr)
+            NSApp.terminate(nil)
+            return
+        }
+
+        webView.load(URLRequest(url: url))
+    }
+
+    @objc func zoomIn() {
+        webView.magnification = min(webView.magnification + 0.1, 5.0)
+    }
+
+    @objc func zoomOut() {
+        webView.magnification = max(webView.magnification - 0.1, 0.25)
+    }
+
+    @objc func resetZoom() {
+        webView.magnification = 1.0
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(
+        _ sender: NSApplication
+    ) -> Bool {
+        true
+    }
+}
+
+final class App: NSApplication {
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown,
+           event.modifierFlags.contains(.command) {
+
+            switch event.charactersIgnoringModifiers {
+            case "+", "=":
+                (delegate as? AppDelegate)?.zoomIn()
+                return
+
+            case "-":
+                (delegate as? AppDelegate)?.zoomOut()
+                return
+
+            case "0":
+                (delegate as? AppDelegate)?.resetZoom()
+                return
+
+            case "w":
+                keyWindow?.close()
+                return
+
+            default:
+                break
+            }
+        }
+
+        super.sendEvent(event)
+    }
+}
+
+let app = App.shared
+let delegate = AppDelegate()
+
+app.delegate = delegate
+app.setActivationPolicy(.accessory)
+app.run()

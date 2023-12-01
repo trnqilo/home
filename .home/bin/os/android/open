@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+
+if type android &>/dev/null && type telecomando &>/dev/null; then
+  android open "$@"
+else
+  exec am start -a android.intent.action.VIEW -d "$*"
+fi

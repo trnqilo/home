@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'clocks' ]]; then
+  if type system_profiler &>/dev/null; then system_profiler SPMemoryDataType | grep 'Type:' | $awk '{print $2}'
+  elif type wmic &>/dev/null; then wmic memorychip get speed
+  elif type dmidecode &>/dev/null; then sudo dmidecode --type 17 | grep MT/s | head -1 | $awk '{print $2" "$3}' | xargs; fi
+elif type free &>/dev/null; then
+  free -h | grep Mem | $awk '{print $2" total, "$7" free, "$3" used"}' \
+    | $sed 's/i//g'
+elif type vm_stat &>/dev/null; then vm_stat | $awk -v total_bytes=$(sysctl -n hw.memsize) '
+/page size/ {pgsize=$8}
+/Pages free/ {free=$3}
+/Pages inactive/ {inactive=$3}
+/Pages speculative/ {spec=$3}
+END {
+    gb = 1024 * 1024 * 1024;
+    tot = sprintf("%.1f", total_bytes/gb);
+    fr  = sprintf("%.1f", (free + inactive + spec) * pgsize / gb);
+    us  = sprintf("%.1f", (total_bytes - ((free + inactive + spec) * pgsize)) / gb);
+    sub(/\.0$/, "", tot); sub(/0$/, "", tot); sub(/\.$/, "", tot);
+    sub(/\.0$/, "", fr);  sub(/0$/, "", fr);  sub(/\.$/, "", fr);
+    sub(/\.0$/, "", us);  sub(/0$/, "", us);  sub(/\.$/, "", us);
+    printf "%sG total, %sG free, %sG used\n", tot, fr, us;
+}'
+elif type memory_pressure &>/dev/null; then
+  pressure="`memory_pressure`"
+  free=`tail -1 <<< "$pressure" | $awk '{print 8*$5/100}'`
+  total=`head -1 <<< "$pressure" | $awk '{print $4/1073741824}'`
+  used=`$awk '{print $1-$2}' <<< "$total $free"`
+  echo "${total}G total, ${free}G free, ${used}G used"
+fi
