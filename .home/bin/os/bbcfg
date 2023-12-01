@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+function _bbcfg_ { cp -v "$DOTHOME/conf/blackbox/.blackbox"* "$HOME"; menu_subs; }
+
+function _bbcfg_xrdp { echo 'blackbox-session' > "$HOME/.xsession"; }
+
+function _bbcfg_install { pkg i blackbox blackbox-themes pcmanfm xterm xinit; }
+
+function menu_subs {
+  if type nautilus &>/dev/null; then
+    $sed -i 's/pcmanfm/nautilus/g' "$HOME/.blackboxmenu"
+  elif type thunar &>/dev/null; then
+    $sed -i 's/pcmanfm/thunar/g' "$HOME/.blackboxmenu"
+  fi
+  if type gnome-terminal &>/dev/null; then
+    $sed -i 's/xterm/gnome-terminal/g' "$HOME/.blackboxmenu"
+  elif type xfce4-terminal &>/dev/null; then
+    $sed -i 's/xterm/xfce4-terminal/g' "$HOME/.blackboxmenu"
+  fi
+}
+
+_bbcfg_$1
