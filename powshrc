@@ -1,0 +1,257 @@
+function prompt {
+  if ($Shell) {
+    $shellName = $Shell
+  } elseif ($env:SHELL) {
+    $shellName = Split-Path $env:SHELL -Leaf
+  } else {
+    $shellName = (Get-Process -Id $PID).ProcessName
+  }
+  $pColor = if ($env:PROMPT_COLOR) { $env:PROMPT_COLOR } else { "White" }
+  $pAccent = if ($env:PROMPT_ACCENT) { $env:PROMPT_ACCENT } else { "White" }
+  $pIcon = if ($env:PROMPT_ICON) { $env:PROMPT_ICON } else { ">:" }
+  $time = Get-Date -Format "HH:mm:ss"
+  $currentPath = $ExecutionContext.SessionState.Path.CurrentLocation.Path
+  $displayPath = $currentPath -replace [regex]::Escape($HOME), "~"
+  Write-Host "$env:USERNAME " -NoNewline -ForegroundColor $pColor
+  Write-Host "$env:COMPUTERNAME " -NoNewline -ForegroundColor $pAccent
+  Write-Host "$shellName " -NoNewline -ForegroundColor $pAccent
+  Write-Host "$time " -NoNewline -ForegroundColor $pAccent
+  Write-Host "$displayPath" -ForegroundColor $pColor
+  Write-Host "$pIcon" -NoNewline -ForegroundColor $pColor
+  return " "
+}
+
+function shtyle {
+  param($icon, $color, $accent)
+
+  if (!$icon -or !$color -or !$accent) {
+    Write-Host "Usage:   shtyle [Icon] [Color] [Accent]" -ForegroundColor Yellow
+    Write-Host "Example: shtyle '>:' Cyan Gray" -ForegroundColor Gray
+    Write-Host "`nColors: Black, Blue, Cyan, Gray, Green, Magenta, Red, White, Yellow"
+    return
+  }
+
+  $env:PROMPT_ICON = $icon
+  $env:PROMPT_COLOR = $color
+  $env:PROMPT_ACCENT = $accent
+
+  [Environment]::SetEnvironmentVariable("PROMPT_ICON", $icon, "User")
+  [Environment]::SetEnvironmentVariable("PROMPT_COLOR", $color, "User")
+  [Environment]::SetEnvironmentVariable("PROMPT_ACCENT", $accent, "User")
+
+  Write-Host "[+] Shtyle updated! (Icon: $icon, Color: $color, Accent: $accent)" -ForegroundColor Green
+}
+
+function open { Start-Process $args[0] }
+
+function wudo {
+  param([Parameter(ValueFromRemainingArguments=$true)]$Command)
+  if ($null -eq $Command) {
+    Start-Process powershell -Verb RunAs
+  } else {
+    $cmdString = "cmd /c $Command & pause"
+    Start-Process cmd -ArgumentList "/c $cmdString" -Verb RunAs
+  }
+}
+
+function Stop-Session { exit }
+
+Set-Alias -Name qq -Value Stop-Session
+
+if ($host.Name -eq 'ConsoleHost' -and (Get-Module -ListAvailable PSReadLine)) {
+  Import-Module PSReadLine
+  Set-PSReadLineKeyHandler -Chord "Ctrl+d" -Function DeleteCharOrExit
+}
+
+function zz {
+  $signature = '[DllImport("user32.dll")] public static extern int SendMessage(int hWnd, int hMsg, int wParam, int lParam);'
+  $type = Add-Type -MemberDefinition $signature -Name "Win32Mon" -Namespace "Win32Utils" -PassThru -ErrorAction SilentlyContinue
+  $type::SendMessage(-1, 0x0112, 0xF170, 2)
+}
+
+function zzz {
+  Add-Type -AssemblyName 'System.Windows.Forms'
+  [System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false)
+}
+
+function rebo { shutdown -r -t 0 }
+
+function off { shutdown -p }
+
+function pow {
+  param($name)
+  $schemes = powercfg -list | Out-String
+  $active = powercfg -getactivescheme
+  $prevMatch = [regex]::Match($active, '\((.*)\)')
+  $previous = $prevMatch.Groups[1].Value
+
+  if ($null -eq $name) {
+    Write-Host $previous -ForegroundColor Cyan
+    return
+  }
+
+  $targetLine = $schemes -split "`r`n" | Where-Object { $_ -like "*$name*" }
+  if ($targetLine) {
+    $guid = [regex]::Match($targetLine, '([a-z0-9-]{36})').Groups[1].Value
+    powercfg -setactive $guid
+    $newActive = powercfg -getactivescheme
+    $currMatch = [regex]::Match($newActive, '\((.*)\)')
+    $current = $currMatch.Groups[1].Value
+    Write-Host "$previous -> $current" -ForegroundColor Green
+  } else {
+    Write-Host "Scheme '$name' not found." -ForegroundColor Red
+  }
+}
+
+function batt {
+  $charge = (Get-CimInstance -ClassName Win32_Battery).EstimatedChargeRemaining
+  if ($null -eq $charge) {
+    Write-Host "No battery detected (Desktop?)" -ForegroundColor Gray
+  } else {
+    Write-Host "$($charge)%" -ForegroundColor Green
+  }
+}
+
+function l { Get-ChildItem -Force $args | Sort-Object LastWriteTime -Descending }
+
+function ll { Get-ChildItem -Force $args | Sort-Object LastWriteTime -Descending }
+
+function zip {
+  param($source, $dest)
+  Compress-Archive -Path $source -DestinationPath $dest -Force
+}
+
+function unzip {
+  param($source, $dest)
+  Expand-Archive -Path $source -DestinationPath $dest -Force
+}
+
+function sha256sum {
+  param($path)
+  Get-FileHash $path -Algorithm SHA256 | Format-List
+}
+
+function wan {
+  try {
+    $res = Invoke-RestMethod -Uri "https://brbaro.web.app/ping" -TimeoutSec 7
+    if ($res.Trim() -eq "pong") { Write-Host "connected" -ForegroundColor Green }
+    else { Write-Host "offline" -ForegroundColor Red }
+  } catch {
+    Write-Host "offline" -ForegroundColor Red
+  }
+}
+
+function rdp {
+  param($server)
+  if ($null -eq $server) { Start-Process mstsc }
+  else { Start-Process mstsc -ArgumentList "/v:$server" }
+}
+
+function whereami {
+  $output = if ($env:whereami) { $env:whereami } else { "windows" }
+  Write-Host $output
+}
+
+function bot {
+  $query = $args -join " "
+  if ([string]::IsNullOrWhiteSpace($query)) {
+    Start-Process "https://chat.openai.com"
+  } else {
+    $encodedQuery = [uri]::EscapeDataString($query)
+    Start-Process "https://chat.openai.com?q=$encodedQuery"
+  }
+}
+
+function dis {
+  $discord = "$env:LOCALAPPDATA\Discord\Update.exe"
+  if (Test-Path $discord) {
+    Start-Process $discord -ArgumentList "--processStart Discord.exe"
+  } else {
+    Write-Host "[!] Discord not found in LocalAppData." -ForegroundColor Red
+  }
+}
+
+function codeup { winget install --id Microsoft.VisualStudioCode --source winget }
+
+function wslup { wudo wsl --install }
+
+function goo {
+  $query = $args -join "+"
+  if (!$query) { Start-Process "https://google.com" }
+  else { Start-Process "https://www.google.com/search?q=$query" }
+}
+
+function fin {
+  param($owner = $env:USERNAME)
+  Write-Host "[*] Terminating all processes for user: $owner" -ForegroundColor Yellow
+  taskkill /f /fi "USERNAME eq $owner"
+}
+
+function killall {
+  foreach ($proc in $args) {
+    $procName = $proc -replace '\.exe$', ''
+    Write-Host "[-] Killing $procName..." -ForegroundColor Cyan
+    taskkill /f /im "$procName.exe" 2>$null
+  }
+}
+
+function mobo {
+  $board = Get-CimInstance Win32_BaseBoard
+  Write-Host "`nChecking Motherboard..." -ForegroundColor Gray
+  Write-Host "Manufacturer : $($board.Manufacturer) $($board.Product)" -ForegroundColor Green
+  Pause
+}
+
+function paths { [Environment]::GetEnvironmentVariable('Path', 'User') }
+
+function ips { ipconfig.exe /all }
+
+function pingonce {
+  param($target = "github.com")
+  if (Test-Connection -ComputerName $target -Count 1 -Quiet) {
+    Write-Host "connected" -ForegroundColor Green
+  } else {
+    Write-Host "offline" -ForegroundColor Red
+    return $false
+  }
+}
+
+function nics {
+  param($action, $name)
+
+  if (!$action) {
+    Write-Host "--- Network Interfaces ---" -ForegroundColor Cyan
+    Get-NetAdapter | Select-Object Name, Status, InterfaceDescription | Format-Table
+    Write-Host "Usage: nics [up/down] 'Interface Name'" -ForegroundColor Gray
+    return
+  }
+
+  if (!$name) {
+    Write-Host "[!] Error: Specify interface name (e.g., nics up 'Ethernet')" -ForegroundColor Red
+    return
+  }
+
+  if ($action -eq "up") {
+    Enable-NetAdapter -Name $name -Confirm:$false
+    Write-Host "[+] Enabling $name..." -ForegroundColor Green
+  } elseif ($action -eq "down") {
+    Disable-NetAdapter -Name $name -Confirm:$false
+    Write-Host "[-] Disabling $name..." -ForegroundColor Yellow
+  }
+
+  Get-NetAdapter -Name $name | Select-Object Name, Status
+}
+
+function Invoke-ClacWrapper {
+  param($Operator, $Numbers)
+  clac $Operator @Numbers
+}
+
+function add { Invoke-ClacWrapper -Operator "add" -Numbers $args }
+function mul { Invoke-ClacWrapper -Operator "mul" -Numbers $args }
+function div { Invoke-ClacWrapper -Operator "div" -Numbers $args }
+function sub { Invoke-ClacWrapper -Operator "sub" -Numbers $args }
+function avg { Invoke-ClacWrapper -Operator "avg" -Numbers $args }
+
+function gamebardelete { Get-AppxPackage Microsoft.XboxGamingOverlay | Remove-AppxPackage }
+function gamebarinstall { open "ms-windows-store://pdp/?productid=9NZKPSTSNW4P" }

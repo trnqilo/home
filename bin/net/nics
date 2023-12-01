@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+
+if ! [[ "$1" && "$2" ]]; then networksetup -listallnetworkservices; exit; fi
+
+action="$1"; shift
+
+function wan_interface { ip route | grep default | $awk '{print $5}'; }
+
+function wan_interface { route get default | grep interface; }
+
+if type networksetup &>/dev/null; then
+  sudo networksetup -setnetworkserviceenabled "${1:-Ethernet}" "${action:-on}"
+  if [[ "$action" == 'on' ]]; then
+    until wan&>/dev/null;do printf .; sleep 1;done; echo
+  fi
+elif type ip &>/dev/null; then
+  sudo ip link set $1 $action \
+    && echo "${1} ${action}" \
+    || echo "${1} ${action} failed"
+fi
+wan

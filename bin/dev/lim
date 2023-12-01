@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" =~ ^h(ome)?$ ]]; then export LIMA_HOME="$2"; shift 2; fi
+
+if pgrep -x Docker\ Desktop >/dev/null; then echo Docker Desktop is running
+elif [[ "$1" =~ ^e(dit)?$ ]]; then edi "${LIMA_HOME:-$HOME/.colima}/default/colima.yaml"
+else colima "$@"; fi
