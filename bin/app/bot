@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [[ "$1" =~ ^c(laude)?$ ]]; then shift; bot='claude.ai/new?q='
+elif [[ "$1" =~ ^g(emini)?$ ]]; then shift; bot='www.google.com/search?q=@gemini+'
+else bot='chat.openai.com?q='; fi
+query="$@" query="${query// /+}"
+open "https://${bot}${query}"
