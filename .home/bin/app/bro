@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+destination="$1"
+destination="https://${destination//https:\/\//}"
+if test -d /Applications/Safari.app &>/dev/null; then
+  open -a safari "$destination"
+elif type google-chrome &>/dev/null; then google-chrome "$destination"
+elif type microsoft-edge &>/dev/null; then microsoft-edge "$destination"
+fi
