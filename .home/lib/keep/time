@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+function day {
+    local start=`starttime`
+    local end="$1"
+    local hours=`hourssince $start $end`
+    sub $hours `afktime`
+}
+
+function days { local logs=(`ls "$KEEP/log/"*.*.*.md`); echo "${#logs[@]}"; }
+
+function starttime { [[ -f "$LOGFILE" ]] && head -n 1 "$LOGFILE" | gawk '{print $2}' || return 1; }
+
+function afktime { tasktime afk; }
+
+function tasktime { add "`grep "[[:digit:]] $1" "$LOGFILE" | gawk '{print $4}'`"; }
+
+function weekhours {
+    [[ "$1" ]] && local TOTAL="$1" || local TOTAL='0'
+    local DAYOFWEEK=`date '+%u'`
+    for (( DAY=1; DAY<DAYOFWEEK; ++DAY )); do
+        local SUBDAYS="-"$DAY"days"
+        local DAYLOG="$KEEP/log/"`date +%Y.%m.%d -d "$SUBDAYS"`".md"
+        is file "$DAYLOG" &&\
+            local DAYHOURS=`tail -n1 $DAYLOG | gawk '{ print $1 }'` &&\
+                TOTAL=`add $DAYHOURS $TOTAL`
+    done
+    echo $TOTAL
+}
+
+function timer {
+    ! is file "$LOGFILE" && echo 'day never started...' && return 1
+    [[ "$1" ]] && watch -tcn"$1" 'keep timer' && return
+
+    if active; then
+        [[ ! "$WEEKHOURS" ]] && export WEEKHOURS=`weekhours`
+        HOURS="`day`"
+        TOTALHOURS="`add $HOURS $WEEKHOURS`"
+        HOURS_LEFT="`clac 40 - "$TOTALHOURS"`"
+        hours_left_day="`clac 8 - "$HOURS"`"
+        hours_left_day="`min $hours_left_day $HOURS_LEFT`"
+        eod_stamp="`round 0 "$hours_left_day x 3600"`" now_stamp="`date +%s`"
+        eod_stamp="`round 0 "$now_stamp + $eod_stamp"`"
+    else
+        logcontents="`tail -n7 "$LOGFILE"`"
+        HOURS="`echo $logcontents | gawk '{print $10}'`"
+        TOTALHOURS="`echo $logcontents | gawk '{print $4}'`"
+        HOURS_LEFT="`echo $logcontents | gawk '{print $6}'`"
+        eod_stamp="`echo $logcontents | gawk '{print $2}'`"
+    fi
+
+    if is less $TOTALHOURS 10; then TOTALHOURS=" $TOTALHOURS"; fi
+    if is less $HOURS 10; then HOURS=" $HOURS"; fi
+
+    local task_items=($KEEPTASKS 'afk')
+    for task_item in "${task_items[@]}"; do
+        local hours="`tasktime $task_item`"
+        if is less $hours 10; then hours=" $hours"; fi
+        if ! is zero $hours; then
+          local tasks="$tasks\n+ $task_item \t$hours"
+        fi
+    done
+
+    EOD="`happily "date -d '@$eod_stamp' '+%R'"`"
+    [[ ! "$EOD" ]] && EOD='fin'
+
+    message="
++ total\t$TOTALHOURS / $HOURS_LEFT
++ hours\t$HOURS$tasks"
+
+    todos=`todo` && [[ "$todos" ]] && message="$message\n \n+ $todos"
+    quests=`quest` && [[ "$quests" ]] && message="$message\n \n+ $quests"
+
+    message="+ today\t`date +%R` / $EOD ($TOTAL_DAYS)\n$message" 
+    message="`formatmessage "$message"`"
+    
+    echo -e "$message" | grep -v "^$"
+}

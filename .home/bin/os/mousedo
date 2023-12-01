@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -e
+
+device='/dev/input/'
+if [[ "$1" == '-d' ]]; then device+="$2"; shift 2
+else device+='mouse0'; fi
+
+if [[ "$1" == '-t' ]]; then sleep="sleep $2"; shift 2
+else sleep=''; fi
+
+if type python3 &>/dev/null; then
+  # read_keys="'4IHHI',open('$device','rb').read(24)"
+  read_mouse="'3b',open('$device','rb').read(3)"
+  print_event="import struct;print(struct.unpack($read_mouse))"
+
+  function mouse_event {
+    sudo python3 <<< "$print_event" 2>/dev/null | sed -Ee 's/\(|\)|,//g'
+  }
+else
+  function mouse_event { sudo cat "$device" | read -n1; }
+fi
+
+dothis="${@:-echo}"
+
+while :; do $dothis `mouse_event`; $sleep; done

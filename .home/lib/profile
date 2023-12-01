@@ -1,0 +1,21 @@
+export BLOBS="$HOME/.local/blobs"
+export HOMETEST="$DOTHOME/lib/shell/testsh"
+
+alias tests='"$HOMETEST/run"'
+alias prolib='workspace="$DOTHOME/lib" pro'
+alias collects='import "$DOTHOME/lib/shell/collect/"*'
+
+include \
+  "$DOTHOME/lib/shell/blobman" \
+  "$DOTHOME/lib/shell/pipes" \
+  "$DOTHOME/lib/easyserv/bin" \
+  "$DOTHOME/lib/housesitter/bin" \
+  "$DOTHOME/lib/keep/bin" \
+  "$DOTHOME/lib/masqs" \
+  "$DOTHOME/lib/scancoder/bin"
+
+function testsh {
+  bash -c 'source "$HOMETEST/expect"
+  source "$HOMETEST/when"
+  source "$DOTHOME/bin/shell/plush"'
+}

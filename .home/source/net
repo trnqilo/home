@@ -1,0 +1,13 @@
+
+function httpserve {
+  if [[ "$1" ]]; then cd "$1"; fi
+  python3 -m http.server ${2:-8080}
+}
+
+function hostsgen { local hosts=( $@ 'https://winhelp2002.mvps.org/hosts.txt' )
+  curl ${hosts[*]} | grep '^0\.0\.0\.0' | grep -o '^[^#]*' | sed -e 's/\r/\n/g' | sort | uniq
+}
+
+alias whatsmyip='dig @resolver1.opendns.com ANY myip.opendns.com +short'
+# alias ports='lsof -i' # netstat -an
+# alias beacon='mbeacon -uuid ${uuid:-`uuidgen`} -major 0 -minor 0'

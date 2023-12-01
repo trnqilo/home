@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set  -e
+
+function _firewall_linux { local operation=''
+  if [[ "$1" ]]; then operation="$1"; shift; fi
+  if [[ ! "$operation" ]]; then operation='status numbered'
+  elif [[ "$operation" =~ ^r(estart)?$ ]]; then operation='reload'
+  elif [[ "$operation" =~ ^up?$ ]]; then operation='enable'
+  elif [[ "$operation" =~ ^d(own)?$ ]]; then operation='disable'
+  fi
+  sudo ufw $operation $@
+}
+
+_firewall_$whereami $@

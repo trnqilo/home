@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -e
+
+motion_home="$HOME/.motion"
+housesitter="$DOTHOME/lib/housesitter/housesitter"
+mkdir -p "$motion_home" "$HOME/Pictures/motion"
+
+echo "
+daemon on
+setup_mode off
+log_file $motion_home/motion.log
+log_level 1
+target_dir $HOME/Pictures/motion
+videodevice /dev/video0
+width 1280
+height 720
+framerate 30
+text_left HS
+text_right %Y-%m-%d\n%T-%q
+emulate_motion off
+threshold 1500
+noise_level 0
+despeckle_filter EedDl
+minimum_motion_frames 1
+event_gap 60
+pre_capture 3
+post_capture 0
+picture_output off
+picture_filename %Y%m%d%H%M%S-%q
+movie_output on
+movie_max_time 60
+movie_quality 0
+movie_codec mkv
+movie_filename %t-%v-%Y%m%d%H%M%S
+webcontrol_port 4321
+webcontrol_localhost on
+webcontrol_parms 0
+stream_port 3333
+stream_localhost off
+on_event_start $housesitter trip 
+on_event_end $housesitter zzz
+on_picture_save $housesitter cap %f
+on_movie_end value $housesitter cap %f
+" > "$motion_home/motion.conf"

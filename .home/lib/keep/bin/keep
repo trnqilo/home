@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" ]]; then
+  [[ ! "$DATE" ]] && export DATE=`date '+%Y.%m.%d'`
+  [[ ! "$LOGFILE" ]] && export LOGFILE="$KEEP/log/$DATE.md"
+  [[ ! "$NOTES" ]] && export NOTES="$KEEP/notes"
+  [[ ! "$TODOFILE" ]] && export TODOFILE="$NOTES/todo.md"
+  [[ ! -d "$KEEP/log" ]] && mkdir -p "$KEEP/log/"
+  [[ ! -d "$KEEP/shell" ]] && mkdir -p "$KEEP/shell/"
+  [[ ! -d "$NOTES" ]] && mkdir -p "$NOTES"
+  [[ ! "$KEEP_COLOR" ]] && export KEEP_COLOR="`ansicode bright "$PROMPT_COLOR"`"
+  [[ ! "$KEEP_ACCENT" ]] && export KEEP_ACCENT="`ansicode bright "$PROMPT_ACCENT"`"
+  source "$DOTHOME/lib/keep/logs"
+  source "$DOTHOME/lib/keep/time"
+  source "$DOTHOME/lib/keep/day"
+  source "$DOTHOME/lib/keep/util"
+  $@
+fi

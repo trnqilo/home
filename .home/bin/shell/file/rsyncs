@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+if [[ ! "$2" ]]; then echo 'usage: rsyncs /path/to/source /path/to/dest'
+else
+  rsync -a --progress --checksum --ignore-errors "$1/." "$2"
+fi

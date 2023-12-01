@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -e
+
+function bliz {
+  [[ ! "$BATTLE_NET_HOME" ]] && echo 'BATTLE_NET_HOME is not set.' && return 1
+  [[ ! -d "$BATTLE_NET_HOME" ]] && echo 'BATTLE_NET_HOME directory is invalid.' && return 1
+  launcher() { cd "$BATTLE_NET_HOME/$1/" && secretly "./$1\ Launcher.exe"; }
+  launcher 'Battle.net'
+  [[ "$1" ]] && launcher "$1"
+}
+
+function epic {
+  secretly "/c/Program\ Files\ \(x86\)/Epic\ Games/Launcher/Portal/Binaries/Win64/EpicGamesLauncher.exe"
+  [[ "$1" ]] && open "com.epicgames.launcher://apps/$1?action=launch"
+}
+
+function riot {
+  riot_client_home="$RIOT_HOME/Riot Games/Riot Client"
+  if [[ ! -d "$riot_client_home" ]]; then echo 'RIOT_HOME is invalid.'; return 1
+  else cd "$riot_client_home"; fi
+
+  if [[ "$2" == 'clean' ]]; then rm -frv "$LOCALAPPDATA/Riot Games" "$LOCALAPPDATA/VALORANT"; fi
+
+  if [[ "$1" ]]; then secretly "./RiotClientServices.exe --launch-product=$1 --launch-patchline=live"
+  else secretly './UX/RiotClientUx.exe'; fi
+}
+
+function valve {
+  [[ "$1" ]] && open "steam://rungameid/$1" || open 'steam://open/games'
+}
+
+function ubi {
+  uplay_home="$UBI_HOME/uplay/"
+  [[ ! -d "$uplay_home" ]] && echo "UBI_HOME is invalid." && return 1
+  cd "$uplay_home" && secretly './UbisoftConnect.exe'
+}
+
+function serve {
+  if [[ "$1" ]]; then
+    export DS_HOME="$PLAY/ds"
+    source "$DS_HOME/profile"
+    servegame $@
+  fi
+}
+
+function cs {
+  if [[ "$1" == 'ds' ]]; then shift; cd "$STEAM_HOME/steamapps/common/Counter-Strike Global Offensive/game/bin/win64"
+    powsh ./cs2.exe -dedicated -port ${port:-27015} -maxplayers 10 +sv_lan 1 +sv_logfile 1 +sv_cheats 1 +map ${map:-de_dust2} +hostname Tranquilo +game_alias ${mode:-competitive} $@
+  else valve '730'; fi
+}
+
+game="$1"; shift
+if [[ "$game" == 'cfg' ]]; then "$PLAY/cfg/cfgutil" $@
+elif [[ "$game" == 'args' ]]; then "$PLAY/cfg/argsutil" $@
+elif [[ "$game" =~ ^ds$|^serve$ ]]; then serve $@
+elif [[ "$game" =~ ^a?pex$ ]]; then valve '1172470'
+elif [[ "$game" =~ ^assetto$|^acor$ ]]; then valve '244210'
+elif [[ "$game" =~ ^blend(er)?$ ]]; then valve '365670'
+elif [[ "$game" == 'bn' ]]; then bliz
+elif [[ "$game" =~ ^cs2?$ ]]; then cs $@
+elif [[ "$game" =~ ^cstrike$|^css$ ]]; then valve '240'
+elif [[ "$game" == 'cyberpunk' ]]; then valve '440'
+elif [[ "$game" =~ ^epic$|^egl$ ]]; then epic
+elif [[ "$game" =~ ^fortnite$|^fn$ ]]; then epic 'Fortnite'
+elif [[ "$game" == 'gmod' ]]; then valve '4000'
+elif [[ "$game" =~ ^ins$|^insurgency$ ]]; then valve '222880'
+elif [[ "$game" == 'l4d2' ]]; then valve '550'
+elif [[ "$game" =~ ^league$|^lol$ ]]; then riot 'league_of_legends'
+elif [[ "$game" =~ ^overwatch2?$|^ow2?$ ]]; then bliz 'overwatch'
+elif [[ "$game" == 'portal' ]]; then valve '400'
+elif [[ "$game" == 'portal2' ]]; then valve '620'
+elif [[ "$game" =~ ^pubg?$ ]]; then valve '578080'
+elif [[ "$game" =~ ^quake3$|^q3a$ ]]; then valve '2200'
+elif [[ "$game" == 'realm' ]]; then valve '813820'
+elif [[ "$game" =~ ^riot$|^rg$  ]]; then riot $@
+elif [[ "$game" =~ ^rocketleague$|^rl$ ]]; then valve '252950'
+elif [[ "$game" == 'rust' ]]; then valve '252490'
+elif [[ "$game" =~ ^siege$|^rss$ ]]; then valve '359550'
+elif [[ "$game" == 'splitgate' ]]; then valve '677620'
+elif [[ "$game" == 'steam' ]]; then valve
+elif [[ "$game" =~ ^tf2?$ ]]; then valve '440'
+elif [[ "$game" == 'uplay' ]]; then ubi
+elif [[ "$game" =~ ^val(orant)?$ ]]; then riot 'valorant' $@
+else color cyan 'examples:\ncfg\napex\nassetto\nblender\nbn\ncs\ncstrike\ncyberpunk\negl\nfortnite\ngmod\ninsurgency\nl4d2\nleague\noverwatch\nportal\nportal2\npubg\nq3a\nrealm\nriot\nrocketleague\nrust\nsiege\nsteam\nsplitgate\ntf2\nuplay\nvalorant'
+fi

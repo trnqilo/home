@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! "$1" ]] && exit
+min="`value $1`"; shift
+while [[ "$1" ]]; do
+  if is greater "$min" "$1"; then min="$1"; fi
+  shift
+done
+echo "$min"
