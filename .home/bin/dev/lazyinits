@@ -1,0 +1,44 @@
+lazies() {
+  library=""
+  case "$whereami" in
+    darwin|macos)
+      library="$HOME/Library/Application Support"
+      ;;
+    linux)
+      library="${XDG_CONFIG_HOME:-$HOME/.config}"
+      ;;
+    windows)
+      library="${APPDATA:-$HOME/.config}"
+      ;;
+    *)
+      echo "error: Unknown OS type '$whereami'" >&2
+      return 1
+      ;;
+  esac
+
+  lazygit_dir="$library/lazygit"
+  lazydocker_dir="$library/jesseduffield/lazydocker"
+  mkdir -p "$lazygit_dir" "$lazydocker_dir"
+
+  cat << 'EOF' > "$lazygit_dir/config.yml"
+gui:
+  disableStartupPopups: true
+  showBottomLine: false
+  showCommandLog: false
+git:
+  diffRenderers:
+    - colorArg: always
+      command: delta --dark --paging=never --line-numbers
+EOF
+
+  cat << 'EOF' > "$lazydocker_dir/config.yml"
+gui:
+  disableStartupPopups: true
+  showBottomLine: false
+  showCommandLog: false
+EOF
+
+  echo "configured for $whereami"
+}
+
+lazies

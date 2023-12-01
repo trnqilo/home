@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+/usr/local/bin/_hs_message 'TRIPPED'
+
+mkdir /dev/shm/hs
+date +"%Y-%m-%d-%H%M" > /dev/shm/hs/trip

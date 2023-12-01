@@ -1,0 +1,20 @@
+function testsh {
+  bash -c 'source "$HOMETEST/expect"
+  source "$HOMETEST/when"
+  source "$dothome/bin/shell/plush"'
+}
+
+export BLOBS="$HOME/.local/blobs"
+export HOMETEST="$dothome/lib/shell/testsh"
+
+alias tests='"$HOMETEST/run"'
+alias collects='import "$dothome/lib/shell/collect/"*'
+
+include \
+  "$dothome/lib/devtime" \
+  "$dothome/lib/easyserv" \
+  "$dothome/lib/housesitter" \
+  "$dothome/lib/masqs"
+import \
+  "$dothome/lib/play/profile" \
+  "$dothome/lib/shell/gitsh/"*
