@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+if [[ "$skip" == true ]]; then
+  echo 'skipped'; exit
+elif [[ ! "$URL" ]]; then
+  URL="${WAN_TEST_URL:-"https://github.com"}"
+fi
+
+URL="${URL//'https://'/''}"
+
+if pingonce -q "$URL"; then
+  echo 'connected'
+else
+  echo 'disconnected'; exit 1
+fi
