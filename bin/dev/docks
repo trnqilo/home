@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'wipe' ]] && surely 'wipe all containers and images'; then
+  docker stop `docker ps -aq` && docker rm `docker ps -aq` ||:
+  docker rmi -f `docker images -aq` ||:
+  docker system prune -af ||:
+elif [[ "$1" == 'stop' ]] && surely 'stop all containers'; then
+  docker stop `docker ps -aq`
+else
+  docker info && docker images -a && docker ps -a
+fi

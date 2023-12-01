@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+if git remote -v &>/dev/null; then
+  git_url="`git remote -v | grep '^origin.*(push)$' | awk '{print $2}'`"
+  if [[ ! "$git_url" ]]; then
+    echo 'repo not found'
+    exit
+  elif echo "$git_url" | grep -q '^git@'; then
+    git_url="${git_url//':'/'/'}"; git_url="${git_url//'//'/'/'}"
+    git_url="${git_url//'git@'/'https://'}"
+  fi
+  if [[ "$2" && "$1" =~ ^pr?(ull)?s?$ ]]; then ghub_path="pull/$2"; shift 2
+  elif [[ "$1" =~ ^pr?(ull)?s?$ ]]; then ghub_path='pulls'; shift
+  elif [[ "$1" =~ ^br?$ ]]; then ghub_path="tree/`git rev-parse --abbrev-ref HEAD`"; shift
+  elif [[ "$1" == 'brs' ]]; then ghub_path='branches'; shift; fi
+else git_url="${GHUB_URL:-"https://github.com"}"
+  [[ "$git_url" =~ ^http(s)?://.*$ ]] || git_url="https://$git_url"
+fi
+
+if [[ "$1" ]]; then ghub_path+="$@"; fi
+
+open "${git_url%.git}/$ghub_path"
