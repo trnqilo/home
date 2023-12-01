@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UPLOADER_SCRIPT="$SCRIPT_DIR/dropbox_uploader.sh"
+CONFIG_FILE="$SCRIPT_DIR/.dropbox_uploader"
+
+if [ ! -f "$UPLOADER_SCRIPT" ]; then
+  echo "Error: dropbox_uploader.sh not found in $SCRIPT_DIR"
+  exit 1
+fi
+
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "Error: Config file not found at $CONFIG_FILE"
+  echo "Run '$UPLOADER_SCRIPT -f $CONFIG_FILE' to set it up."
+  exit 1
+fi
+
+if [ -z "$1" ]; then echo "Usage: $0 /file/path"; exit 1; fi
+
+FILE_PATH="$1"
+if [ ! -f "$FILE_PATH" ]; then
+  echo "Error: File '$FILE_PATH' does not exist."
+  exit 1
+fi
+
+TARGET_DIR="/$(hostname -s)"
+
+if [[ -f /dev/shm/hs/trip ]]; then TARGET_DIR+=-$(</dev/shm/hs/trip); fi
+
+"$UPLOADER_SCRIPT" -f "$CONFIG_FILE" upload "$FILE_PATH" "$TARGET_DIR/" ||:
+rm "$FILE_PATH"
