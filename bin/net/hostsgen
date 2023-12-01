@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set  -e
+
+(
+  base64 -d "$DOTHOME/lib/masqs/etc/masqs/blockhosts"
+  if [[ "$1" ]]; then hosts=( $@ ); curl ${hosts[*]}; fi
+) | \
+grep '^0\.0\.0\.0' | grep -o '^[^#]*' | $sed -e 's/\r/\n/g' | sort | uniq
