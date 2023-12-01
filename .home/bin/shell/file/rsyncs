@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [[ ! "$2" ]]; then echo 'usage: rsyncs /path/to/source /path/to/dest'
+else
+  $sudo rsync -ah --info=progress2 --checksum "$1/." "$2"
+  # $sudo rsync -avz --checksum "$1/." "$2"
+fi
