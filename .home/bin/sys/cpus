@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+if whereami windows; then echo "$NUMBER_OF_PROCESSORS"
+elif whereami darwin bsd; then sysctl -n hw.ncpu
+elif type nproc &>/dev/null; then nproc # --all
+elif type lscpu &>/dev/null; then lscpu | grep '^CPU(s): \+[1-9]\+$' | $awk '{print $2}'; fi
