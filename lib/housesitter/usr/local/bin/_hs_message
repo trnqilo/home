@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+message="$@"
+echo "$message"
+
+source /etc/default/housesitter
+
+/usr/local/bin/_hs_slacker \
+  "`hostname` $message" \
+  "$MESSAGE_WEBHOOK" \
+  "$MESSAGE_CHANNEL"

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+function list_vms { utmctl list; }
+function vm_named { list_vms | grep " $1$" | head -1 | $awk '{print $1}'; }
+
+if [[ ! "$1" ]]; then list_vms
+elif [[ "$1" == 'off' ]]; then utmctl stop `vm_named $2` --request
+elif [[ "$1" == 'halt' ]]; then utmctl stop `vm_named $2` --force
+else utmctl start "`vm_named $1`"; fi

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+message="TRIPPED $(date +"%H:%M")"
+
+source /etc/default/housesitter
+if [[ "$TRIP_MESSAGE" ]]; then message+="
+$TRIP_MESSAGE"
+fi
+/usr/local/bin/_hs_message "$message"

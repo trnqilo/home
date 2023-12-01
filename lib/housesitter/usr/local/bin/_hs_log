@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+log_message="$*"
+log_message="\`\`\`
+$log_message
+\`\`\`"
+
+source /etc/default/housesitter
+/usr/local/bin/_hs_slacker "$log_message" "$BEAT_WEBHOOK" "$BEAT_CHANNEL"
+
+log_file=/dev/shm/hs/$(date +"%Y-%m-%d").md
+sudo mkdir -p /dev/shm/hs
+sudo touch "$log_file"
+printf '%s\n' "$log_message" | sudo tee -a "$log_file"
+sudo /usr/local/bin/_hs_upload --log "$log_file"

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if pidof motion &>/dev/null; then
+  echo 'armed'
+else
+  echo 'sleeping'
+fi
