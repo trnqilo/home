@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "`whereami`" == 'darwin' ]]; then
+  cd "$HOME/Library/Application Support/"
+else
+  cd "$HOME/.config"
+fi
+
+keymaps="`findfilein keymaps/tranquilo.xml "JetBrains" 2> /dev/null ||:`
+`findfilein keymaps/tranquilo.xml "Google" 2> /dev/null ||:`"
+
+function _keymap_find { echo "$keymaps" | grep 'keymaps/tranquilo'; }
+
+function _keymap_apply {
+  _keymap_find | grep -q 'tranquilo' \
+    && each pipe \
+      "cp -v $HOMEHOME/conf/idea/tranquilo.xml" \
+      "`echo "$keymaps" | grep -v '^$'`"
+}
+
+if [[ "$1" ]]; then _keymap_$@
+else _keymap_find \
+  && echo "rerun with 'apply' to update."
+fi

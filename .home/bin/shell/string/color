@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! "$2" ]] && exit
+color="`ansicode $1`"; shift
+colortext="$color$@"
+colortext="\e[0;$colortext\e[0m"
+echo -e "$colortext"
+
+# if [[ "$1" == 'grep' ]]; then
+#   grepxp="$2"; shift 2
+#   echo -e "$@" | GREP_COLORS="ms=${color//m/}" grep --color=always "$grepxp"
+# fi

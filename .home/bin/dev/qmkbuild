@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# function build_dir {
+#   [[ ! -d "$1" ]] && echo 'a valid directory is required.' && exit 1
+#   cd "$@"
+#   jsons=`ls *.json`
+#   [[ ! "$jsons" ]] && echo 'no json files found.' && exit 1
+
+#   for json in $jsons; do qmkbuild "$json"; done
+# }
+
+qmk compile "$@"

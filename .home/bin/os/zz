@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+os=`whereami`
+if [[ "$os" == 'darwin' ]]; then
+    pmset displaysleepnow
+elif [[ "$os" == 'windows' ]]; then
+    scrnsave.scr -s
+elif [[ "$os" == 'android' ]]; then
+    input keyevent 26
+fi

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+os=`whereami`
+if [[ "$os" == *'bsd' ]]; then
+    sudo /usr/sbin/zzz
+elif [[ "$os" == 'darwin' ]]; then
+    pmset sleepnow
+elif [[ "$os" == 'linux' ]]; then
+    grep -q 'LID0.*enabled' /proc/acpi/wakeup \
+      && sudo bash -c 'echo LID0 > /proc/acpi/wakeup'
+    sudo systemctl suspend -i
+elif [[ "$os" == 'windows' ]]; then
+    rundll32.exe powrprof.dll,SetSuspendState Sleep
+fi

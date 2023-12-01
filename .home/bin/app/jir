@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! "$JIRA_ORG" ]] && echo 'JIRA_ORG not set.' && exit
+
+jira_baseurl="https://$JIRA_ORG.atlassian.net"
+jira_project="$JIRA_PROJ_DEFAULT"
+
+[[ ! "$1" ]] && open "$jira_baseurl" || \
+while [[ "$1" ]]; do
+  if [[ "$1" =~ .*-.* ]]; then 
+    open "$jira_baseurl/browse/$1"
+  elif is int "$1"; then
+    open "$jira_baseurl/browse/$jira_project-$1"
+  else
+    jira_project="$1"
+  fi
+  shift
+done

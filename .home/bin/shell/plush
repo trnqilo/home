@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+trap trapc INT && trapc() { :& }
+[[ "$PROMPT_ICON" ]] && icon="$PROMPT_ICON "
+clear; q() { exit; }
+
+until false; do read -rep "$icon" input
+  if is any "$input" 'q' 'exit' 'clear'; then $input
+  else $@ $input; fi
+done

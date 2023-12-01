@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -e
+
+function _adbb_apk { [[ "$1" ]] && _adb pull "/data/app/$1-1/base.apk" "$1.apk"; }
+
+function _adbb_con { while [[ "$1" ]]; do adb connect "$1"; shift; done; }
+
+function _adbb_fwd {
+  if [[ "$1" == 'stop' ]]; then
+    if [[ "$2" ]]; then
+      _adb forward --remove "tcp:$2"
+    else 
+      _adb forward --remove-all
+    fi
+  elif [[ "$1" ]]; then
+    [[ "$2" ]] && dest_port="$2" || dest_port="$1"
+    _adb forward "tcp:$1" "tcp:$dest_port"
+  else
+    echo -e 'usage:\nfwd port\nfwd host_port dest_port\nfwd stop [port]'
+  fi
+}
+
+function _adbb_info {
+  [[ "$1" ]] \
+    && _adb shell getprop | grep "$@" \
+    || _adb shell getprop
+}
+
+function _adbb_logpkg { _adb logcat --pid=`_adb shell pidof -s $1` | grep "$2"; }
+
+function _adbb_ls { adb devices | grep -v '^List of devices\|offline\|^$' | gawk '{print $1}'; }
+
+function _adbb_off {
+  [[ "$1" ]] && flags="-s $1"
+  _adb shell reboot -p
+  [[ "$2" ]] && shift && _adbb_off $@
+}
+
+function _adbb_os { _adb shell getprop ro.build.version.release; }
+
+function _adbb_pkg {
+  if [[ "$2" ]]; then package="$1" activity="$2"
+    _adb shell am start -n "$package/$activity"
+  elif [[ "$1" ]]; then
+    _adb shell am start -n "$1"
+  else
+    _adb shell pm list packages -f
+  fi
+}
+
+function _adbb_rec { _adb shell screenrecord --bit-rate 6000000 /sdcard/`date +%s`.mp4; }
+
+function _adbb_rez { adb kill-server && sleep 1 && adb devices; }
+
+function _adbb_sdk { _adb shell getprop ro.build.version.sdk; }
+
+function _adbb_wait { until _adb shell echo ready; do sleep ${1:-5}; done; }
+
+function _adbb_wifi {
+  [[ "$1" == 'off' ]] && switch='disable' || switch='enable'
+  _adb shell svc wifi $switch
+}
+
+function _adbb_zzz { _adb shell input keyevent 26; }
+
+function _adb { adb $flags $@; }
+
+[[ "$1" == '-s' ]] && flags="$1 $2" && shift 2
+
+if [[ "$1" ]]; then
+  _adbb_$@
+else
+  echo '
+functions:
+apk
+con
+fwd host dest
+info (grep)
+logpkg package grep
+ls
+off
+os
+pkg (package activity)
+rec
+rez
+sdk
+wait
+wifi
+zzz
+'
+fi

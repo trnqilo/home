@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'jbt' ]]; then
+  if [[ `whereami` == 'darwin' ]]; then open -a 'JetBrains Toolbox'
+  else "$HOME/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox"; fi
+  exit
+fi
+
+declare -A ides=(
+  ['as']='studio'
+  ['cl']='clion'
+  ['rm']='rubymine'
+  ['rr']='rustrover'
+  ['vs']='start devenv'
+  ['xc']='xcopen'
+)
+
+function set_ide { ide="${ides["$1"]}"; }
+
+set_ide "${1:-_}"
+
+if [[ "$ide" ]]; then shift
+elif [[ -d "$@" ]]; then
+    if quietly "cd '$@'; ls ./*/*/main/AndroidManifest.xml"; then set_ide as
+  elif quietly "cd '$@'; ls ./Cargo.toml"; then set_ide rr
+  elif quietly "cd '$@'; ls ./Package.swift"; then set_ide xc
+  elif quietly "cd '$@'; ls ./*.xcodeproj"; then set_ide xc
+  elif quietly "cd '$@'; ls ./*.xcworkspace"; then set_ide xc
+  elif quietly "cd '$@'; ls ./Gemfile"; then set_ide rm
+  elif quietly "cd '$@'; ls ./Rakefile"; then set_ide rm
+  elif quietly "cd '$@'; ls ./*.sln"; then set_ide vs
+    fi
+fi
+
+secretly "${ide:-idea} $@"

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+items=() dothis='' result=''
+
+while [[ "$1" ]]; do
+  if [[ "$1" == 'do' ]]; then
+    action="$1"; shift; break
+  else
+    items+=("$1"); shift
+  fi
+done
+
+while [[ "$1" ]]; do dothis+="$1 "; shift; done
+
+[[ "$dothis" ]] && for item in "${items[@]}"; do
+  $dothis $item
+done

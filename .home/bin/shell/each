@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -e
+
+[[ "$3" ]] && op="$1" dothis="$2" && shift 2 \
+  || exit
+
+if [[ "$op" == 'map' ]]; then
+  
+  items=("$@") result=''
+  for item in "${items[@]}"; do
+    result+="`$dothis $item` "
+  done
+  echo $result
+
+elif [[ "$op" == 'exec' ]]; then
+  
+  items=("$@")
+  for item in "${items[@]}"; do
+    $dothis $item
+  done
+
+elif [[ "$op" == 'eval' ]]; then
+  
+  eval "function dothis { $dothis; }"
+  items=("$@")
+  for item in "${items[@]}"; do
+    dothis $item
+  done
+
+elif [[ "$op" == 'pipe' ]]; then
+
+  while IFS=$'\n' read -r item; do $dothis $item; done <<< "$@"
+
+fi

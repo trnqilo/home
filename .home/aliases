@@ -1,0 +1,23 @@
+alias up='if type homeup &>/dev/null; then homeup; else homesync; fi'
+alias home='cod "$HOMEHOME"' holo='mkdir -p "$HOMELOCAL" && cod "$HOMELOCAL"'
+alias prolib='workspace="$HOME/Library" pro'
+alias whatsmyip='dig @resolver1.opendns.com ANY myip.opendns.com +short'
+
+alias binsymbols='nm -gDC'
+alias l='ls -phat' ll='l -l'
+alias gg='grep'
+alias gs='git status' gsa='gs --ignored'
+
+alias rustupup="curl --proto '=https' --tlsv1.2 -sSf 'https://sh.rustup.rs' | sh"
+alias sdkmanup='curl -s "https://get.sdkman.io" | bash'
+
+alias rad='./gradlew'
+alias fastbroot='sudo `which fastboot`'
+
+alias fpg='flutter pub get'
+alias fpup='flutter pub upgrade'
+alias ftest='flutter test'
+
+alias agile="echo -e '\n+ individuals and interactions over processes and tools\n+ working software over comprehensive documentation\n+ customer collaboration over contract negotiation\n+ responding to change over following a plan\n'"
+alias osi="echo -e '\n+ physical\n+ data \n+ network \n+ transport \n+ session \n+ presentation \n+ application\n'"
+alias droids="beastie android \$PROMPT_ACCENT;echo -e '\n15\t35\tVanillaIceCream\n14\t34\tUpsideDownCake\n13\t33\tTiramisu\n12\t31-32\tSnowCone\n11\t30\tRedVelvetCake\n10\t29\tQuinceTart\n 9\t28\tPie\n 8\t26-27\tOreo\n 7\t24-25\tNougat\n 6\t23\tMarshmallow\n 5\t21-22\tLollipop\n 4\t14-20\tICS JellyBean KitKat\n 3\t11-13\tHoneycomb\n 2\t5-10\tEclair Froyo Gingerbread\n 1\t1-4\tPetitFour Donut Cupcake\n'"

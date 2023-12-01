@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+
+[[ "$1" ]] && rebuilt_apk="$1" || exit 1
+
+rebuilt_apk+='_rebuilt.apk'
+apktool b "$1" -o "$rebuilt_apk"
+
+java -Xmx512m -jar "$HOME/.app/uber-apk-signer-1.1.0.jar" --debug -a "$rebuilt_apk" --overwrite --allowResign 
