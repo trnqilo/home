@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+echo $'BoldAsFont=-1\nFontHeight=13\nFontSmoothing=full\nCursorType=block\nCursorBlinks=no\nClipShortcuts=no\nAltFnShortcuts=no\nCtrlShiftShortcuts=yes\nColumns=130\nRows=40\nFontWeight=700\nFontIsBold=yes\nFont=Consolas\nTransparency=low\nThemeFile=mintty\nBackgroundColour=0,0,0\nForegroundColour=175,175,175\nCursorColour=122,122,122\nBlack=0,0,0\nBoldBlack=38,38,38\nRed=184,153,122\nBoldRed=220,204,188\nGreen=122,184,153\nBoldGreen=188,220,204\nYellow=153,184,122\nBoldYellow=204,220,188\nBlue=153,122,184\nBoldBlue=204,188,220\nMagenta=184,122,153\nBoldMagenta=220,188,204\nCyan=122,153,184\nBoldCyan=188,204,220\nWhite=217,217,217\nBoldWhite=255,255,255\nOpaqueWhenFocused=no\nScrollbar=none\nBellType=0\nBellTaskbar=no' > "$HOME/.minttyrc"
+powsh "$DOTHOME/lib/bats/winit.bat"

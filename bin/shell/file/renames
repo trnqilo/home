@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+
+if [ "$#" -ne 2 ]; then echo "Usage: `basename $0` old_string new_string"; exit 1; fi
+
+old_string="$1"
+new_string="$2"
+
+find . -type f ! -path "*/.git/*" | while read -r file; do
+  if grep -Iq . "$file" && grep -q "$old_string" "$file"; then
+    parrot cyan $file
+    $sed -i "s/${old_string}/${new_string}/g" "$file"
+  fi
+done
+
+find . -depth -name "*${old_string}*" | while read -r path; do
+  new_path="$(echo "$path" | $sed "s/${old_string}/${new_string}/g")"
+  mv -v "$path" "$new_path" | parrot cyan
+done
