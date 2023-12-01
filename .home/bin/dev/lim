@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+if pgrep -x Docker\ Desktop >/dev/null; then echo Docker Desktop is running
+elif [[ "$1" =~ ^e(dit)?$ ]]; then edi "$HOME/.colima/default/colima.yaml"
+else colima "$@"; fi
