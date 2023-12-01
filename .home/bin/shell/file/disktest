@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+size_mb="$((1024*${1:-1}))"
+[[ "$2" =~ ^r(ando(m)?)?$ ]] && device=random || device=zero
+[[ ! "$3" ]] || cd "$3"
+parrot mag ${size_mb}MB $device
+dd if=/dev/${device} of=.disktest bs=1M count="${size_mb}" status=progress ||:
+rm -f .disktest

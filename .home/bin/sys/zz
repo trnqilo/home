@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$powercheck" == true ]]; then surely `basename $0` || exit; fi
+
+sleep ${1:-0}
+$onzzz
+
+if whereami darwin; then
+  pmset displaysleepnow
+elif whereami windows; then
+  # powershell.exe -Command "& {
+  #   Add-Type '[DllImport(\"user32.dll\")] public static extern int SendMessage(int hWnd, int hMsg, int wParam, int lParam);' -Name a -Pas | Out-Null;
+  #   [a]::SendMessage(-1, 0x0112, 0xF170, 2)
+# }" &>/dev/null
+  powsh "$DOTHOME/bin/os/windows/bat/zz.bat" &>/dev/null
+elif whereami android; then
+  input keyevent 26
+elif whereami linux; then
+  xset -display ${DISPLAY:-:0.0} dpms force off
+fi
