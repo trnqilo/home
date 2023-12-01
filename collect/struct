@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+function struct {
+  [[ "$1" ]] && local name="$1" && shift || return 1
+  [[ "$codegen" ]] || local codegen=eval
+  [[ "$1" == '{' ]] && shift
+  local struct="unset $name; $name=("
+  while [[ "$1" && "$1" != '}' ]]; do struct="$struct '$1'"; shift; done
+  $codegen "$struct ); `__build_struct $name`"
+}
+
+function __build_struct {
+  sed "s/__NAME__/$1/g" <<< '
+function __NAME__.keys { echo "${!__NAME__[@]}"; }
+function __NAME__.size { echo "${#__NAME__[@]}"; }
+function __NAME__.add { [[ "$1" ]] && __NAME__+=("$@"); }
+function __NAME__.get { [[ "$1" ]] && echo "${__NAME__["$1"]}" || echo "${__NAME__[*]}"; }
+function __NAME__.set { [[ "$1" ]] && local key="$1" && shift && __NAME__["$key"]="$@"; }
+function __NAME__.unset { [[ "$1" ]] && [[ ${__NAME__["$1"]} ]] && unset __NAME__["$1"]; }
+function __NAME__.top { echo "${__NAME__[$((`__NAME__.size`-1))]}"; }
+function __NAME__.push { [[ "$1" ]] && __NAME__+=("$@"); }
+function __NAME__.pop { unset __NAME__[$((`__NAME__.size`-1))]; }
+function __NAME__.discard { unset __NAME__; unset -f __NAME__.keys __NAME__.size __NAME__.add __NAME__.get __NAME__.set __NAME__.unset __NAME__.top __NAME__.push __NAME__.pop; }'
+}
