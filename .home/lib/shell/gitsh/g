@@ -1,0 +1,156 @@
+export GIT_PS1_SHOWDIRTYSTATE=true
+
+function g {
+  if [[ "$1" == 'p' ]]; then shift; gp "$@"
+  elif [[ "$1" == 'aa' ]]; then shift; _g_aa "$@"
+  elif [[ "$1" == 'conf' ]]; then shift; _g_conf_$@
+  elif [[ "$1" == 'br' ]]; then shift; git branch "$@"
+  elif [[ "$1" == 'ci' ]]; then shift; git commit "$@"
+  elif [[ "$1" == 'cia' ]]; then shift; _g_amen "$@"
+  elif [[ "$1" == 'cim' ]]; then shift; _g_cim "$@"
+  elif [[ "$1" == 'cis' ]]; then shift; _g_cis "$@"
+  elif [[ "$1" == 'co' ]]; then shift; git checkout "$@"
+  elif [[ "$1" == 'del' ]]; then shift; _g_brdel "$@"
+  elif [[ "$1" == 'tree' ]]; then shift; _g_tree "$@"
+  elif [[ "$1" == 'pu' ]]; then shift; git pull "$@"
+  elif [[ "$1" == 'rev' ]]; then shift; git rev-parse --abbrev-ref HEAD
+  elif [[ "$1" == 'remo' ]]; then shift; git remote -v
+  elif [[ "$1" == 'reb' ]]; then shift; git rebase "$@"
+  elif [[ "$1" == 'rmlo' ]]; then shift; _g_grmlo
+  elif [[ "$1" == 'sha' ]]; then shift; git rev-parse HEAD
+  elif [[ "$1" == 'sa' ]]; then shift; git status --ignored "$@"
+  elif [[ "$1" == 'up' ]]; then shift; git pull --rebase "$@"
+  elif [[ "$1" == 'g' ]]; then shift; g && g "$@"
+  elif [[ "$1" ]]; then git "$@"
+  else git fetch && git status; fi
+ }; __git_complete g __git_main
+
+function _g_grmlo { # surely remove local branches && git branch --format='%(refname:short)' | grep -v "^$(git branch --show-current)$" | xargs -r git branch -D
+  current=$(git branch --show-current)
+  for branch in $(git branch --no-color | sed "s/[* ]//g"); do
+    if [ "$branch" != "$current" ]; then git branch -D "$branch"; fi
+  done
+}
+
+function _g_brdel {
+  if [[ "$1" ]]; then surely "delete branch $1" || return
+    git branch -D "$1" ||:
+    git push origin --delete "$1" ||:
+  fi
+}
+
+function _g_amen { git log -1 --oneline; surely amend && git commit --amen --no-edit ||:; }
+
+function _g_cim {
+  if [[ "$1" ]]; then local message="$@"
+    read -ep "$message"; git commit -m "$message"
+  else echo 'no message provided.'; fi
+}
+
+function _g_cis { if [[ "$1" =~ ^[0-9]+$ ]]; then local story="${COMMIT_STORY:-ID -}"; _g_cim "${story/ID/$1} ${@:2}"; else _g_cim "$@"; fi; }
+
+function gbr { local regex="$@"; git branch -a | grep --color=always -iE "${regex:-'.*'}"; }
+
+function _g_tree { mkdir -p ../trees
+  local repo="$(basename "`pwd`")"
+  local branch="${1:-`git branch --show-current`}"
+  branch="${branch/origin\//}"
+  local dir="../trees/$repo-${branch//\//-}"
+  if [[ -d "$dir" ]]; then echo "already exists: $dir"; return
+  else surely "copy repo to $dir" || return; fi
+  cp -r . "$dir" && cd "$dir" \
+    && if git rev-parse --verify --quiet "$branch" >/dev/null; then
+          git switch "$branch"
+        elif git rev-parse --verify --quiet "origin/$branch" >/dev/null; then
+          git switch "$branch"
+        else git switch --create "$branch"; fi \
+    && surely=skip _g_grmlo
+}
+
+function tre { local tree="trees/$1"; pro "${tree%/}"; }
+
+function gp { local args= surely=skip
+  if [[ "$1" == '-f' ]]; then args='--force' surely=
+  elif [[ "$1" == '-ff' ]]; then args='--force-with-lease --force-if-includes' surely=sure
+  elif [[ "$1" =~ ^'-'('f'+)$ ]]; then args='--force'; fi
+  surely=$surely surely push $args && git push origin HEAD $args -u
+}
+
+function _g_aa { git add -A; if [[ "$1" ]]; then g "$@"; fi; }
+
+function gh { local git_url= ghub_path=
+  if git remote -v &>/dev/null; then
+    git_url="`git remote -v | grep '^origin.*(push)$' | $awk '{print $2}'`"
+    if [[ ! "$git_url" ]]; then
+      echo 'repo not found'
+      return
+    elif echo "$git_url" | grep -q '^git@'; then
+      git_url="${git_url//':'/'/'}"; git_url="${git_url//'//'/'/'}"
+      git_url="${git_url//'git@'/'https://'}"
+    fi
+    if [[ "$1" =~ ^pr?$ ]]; then ghub_path='pulls?q=is%3Apr+'; shift
+    elif [[ "$1" =~ ^br?$ ]]; then ghub_path="tree/`git rev-parse --abbrev-ref HEAD`"; shift; fi
+  else git_url="${GHURL:-"https://github.com"}"
+    [[ "$git_url" =~ ^http(s)?://.*$ ]] || git_url="https://$git_url"
+  fi
+  if [[ "$1" ]]; then ghub_path+="$@"; fi
+  open "${git_url%.git}/$ghub_path"
+}
+
+function _g_conf_init { local name= email= user_conf= excludesfile=
+
+if [[ -f "$HOME/.gitconfig" ]]; then
+  surely sure 'overwrite existing gitconfig' || return
+  user_conf="`grep -E -A2 '[user]' "$HOME/.gitconfig"`"
+  name="`echo "$user_conf" | grep 'name =' | $awk '{$1=$2=""; print $0}' | $awk '{$1=$1};1' | head -1`"
+  email="`echo "$user_conf" | grep 'email =' | $awk '{print $3}' | $awk '{$1=$1};1' | head -1`"
+fi
+
+read -ep 'name = ' -i "$name" name
+read -ep 'email = ' -i "$email" email
+
+if [[ ! "$name" || ! "$email" ]]; then echo 'enter your name and email.'; return 1; fi
+
+if [[ -f "$HOLO/.gitignore_global" ]]; then excludesfile="$HOLO/.gitignore_global"
+else excludesfile="$DOTHOME/lib/shell/gitsh/.gitignore_global"; fi
+
+echo "[user]
+  name = $name
+  email = $email
+[core]
+  autocrlf = input
+  editor = vim
+  excludesfile = $excludesfile
+[alias]
+  aa = add -A
+  bare = init --bare
+  br = branch
+  brr = branch -a
+  ci = commit
+  co = checkout
+  dif = diff --color-words
+  fe = fetch
+  forces = push origin HEAD --force-with-lease --force-if-includes -u
+  graph = log --all --graph --decorate --oneline
+  host = remote -v
+  patch = apply --ignore-space-change --ignore-whitespace --whitespace=fix --reject
+  po = push origin HEAD -u
+  pu = pull
+  reb = rebase
+  rev = rev-parse --abbrev-ref HEAD
+  s = status
+  sha = rev-parse HEAD
+  shas = reflog
+  st = status
+  up = pull --rebase
+[color]
+  ui = always
+[pull]
+  ff = only
+[init]
+  defaultBranch = main
+[rerere]
+  enabled = true
+" > "$HOME/.gitconfig"
+}
+function _g_conf_ { $bat "$HOME/.gitconfig"; }

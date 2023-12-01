@@ -1,0 +1,10 @@
+<application>
+  <component name="AdvancedSettings">
+    <option name="settings">
+      <map>
+        <entry key="git.non.modal.commit" value="true" />
+        <entry key="ide.ui.native.file.chooser" value="true" />
+      </map>
+    </option>
+  </component>
+</application>
