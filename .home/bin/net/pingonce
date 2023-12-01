@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+exit
+# set -o pipefail
+# if whereami windows; then ping -w 1 -n 1 "$@" 2>/dev/null
+# else ping -W 1 -c 1 "$@" 2>/dev/null; fi | head -1 \
+#  | $awk '{print $3}' | $sed 's/(//g;s/)//g;s/://g'
+
+
+# case "$whereami" in
+#   linux|bsd|darwin)
+#     ping_cmd="ping -c 1 github.com"
+
+#   windows)
+#     ping_cmd="ping -n 1 github.com"
+
+# esac
+# echo $ping_cmd;exit
+# OUTPUT=$($PING_CMD 2>/dev/null)
+
+# if [ $? -ne 0 ]; then
+#   echo "Ping failed."
+#   exit 1
+# fi
+
+# IP=$(echo "$OUTPUT" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n 1)
+
+# if [ -n "$IP" ]; then
+#   echo "$IP"
+# else
+#   exit 1
+# fi

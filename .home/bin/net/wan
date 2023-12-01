@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [[ "$skip" == true ]]; then echo '127.0.0.1'; exit
+elif [[ ! "$url" ]]; then
+  url="${wan_test_url:-"https://github.com"}"
+fi
+url="${url//'https://'/''}"
+pingonce "$url"
