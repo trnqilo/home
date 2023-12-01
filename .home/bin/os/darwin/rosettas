@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+function _rosettas_install { surely install rosetta && softwareupdate --install-rosetta; }
+
+function _rosettas_ {
+  if ls /Library/Apple/System/Library/Receipts | grep -i 'rosetta' && pgrep oahd; then
+    echo 'rosetta is running'
+  else
+    echo 'rosetta not found'
+  fi
+}
+
+_rosettas_$@
