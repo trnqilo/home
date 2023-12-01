@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+whereami="`whereami`"
+if [[ "$whereami" == 'darwin' || "$whereami" == *'bsd' ]]; then
+  pingonce "`netstat -nr | grep 'default.*192' | gawk '{print $2}'`"
+elif [[ "$whereami" == 'windows' ]]; then
+  pingonce "`ipconfig.exe | grep Gateway | gawk '{print $13}'`"
+else
+  pingonce "`ip route show | grep -i 'default via' | gawk '{print $3 }'`"
+fi

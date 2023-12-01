@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+stress -c "${cores:-"4"}" -i "${io:-"1"}" -m "${memory:-"1"}" -t "${time:-"60"}" $@

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+[[ "$1" == 'bright' ]] && bright='60' && shift || bright='0'
+ansicode=''
+if [[ "$1" == 'default' ]]; then ansicode+='10m'
+elif [[ "$1" == 'black' ]]; then ansicode+="$(( 30 + $bright ))m"
+elif [[ "$1" == 'red' ]]; then ansicode+="$(( 31 + $bright ))m"
+elif [[ "$1" == 'green' ]]; then ansicode+="$(( 32 + $bright ))m"
+elif [[ "$1" == 'yellow' ]]; then ansicode+="$(( 33 + $bright ))m"
+elif [[ "$1" == 'blue' ]]; then ansicode+="$(( 34 + $bright ))m"
+elif [[ "$1" == 'magenta' ]]; then ansicode+="$(( 35 + $bright ))m"
+elif [[ "$1" == 'cyan' ]]; then ansicode+="$(( 36 + $bright ))m"
+elif [[ "$1" == 'white' ]]; then ansicode+="$(( 37 + $bright ))m"
+elif [[ "$1" == 'gray' ]]; then ansicode+='90m'
+elif [[ "$1" == 'bold' ]]; then ansicode+="1m"
+elif [[ "$1" == 'underline' ]]; then ansicode+='4m'
+elif [[ "$1" == 'blink' ]]; then ansicode+='5m'
+elif [[ "$1" == 'strike' ]]; then ansicode+='9m'
+fi
+[[ "$ansicode" ]] && echo "$ansicode"

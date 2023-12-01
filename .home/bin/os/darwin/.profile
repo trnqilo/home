@@ -1,0 +1,16 @@
+
+export packages='bash zsh vim git tmux coreutils watch bash-completion zsh-completion wakeonlan gnuplot screen gpg qemu'
+export packages_apps='visual-studio-code iterm2 slack discord qmk/qmk/qmk homebrew/cask-drivers/qmk-toolbox jetbrains-toolbox utm'
+# middleclick rectangle scrcpy smudge/smudge/nightlight
+include '/opt/homebrew/bin' '/opt/homebrew/opt/coreutils/libexec/gnubin' '/usr/local/opt/coreutils/libexec/gnubin'
+alias disk_unlock_by_uuid='diskutil apfs unlockVolume'
+alias findmy='open /System/Applications/FindMy.app'
+alias imsg='open /System/Applications/Messages.app'
+alias qmkt='app "QMK Toolbox"'
+alias task='app "Activity Monitor"'
+alias dis='app Discord'
+alias slk='app Slack'
+alias simulatorwipe='fastlane snapshot reset_simulators'
+alias screensave='app ScreenSaverEngine.app'
+alias xcodeinit='sudo xcode-select -s /Applications/Xcode.app/Contents/Developer'
+alias ip='ipcmd=ifconfig ipcmd'

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+mbeacon -uuid ${uuid:-`uuidgen`} -major 0 -minor 0 

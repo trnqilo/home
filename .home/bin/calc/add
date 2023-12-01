@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+args="${*}"
+args=($args)
+
+expression='0'
+for arg in "${args[@]}"; do
+  expression+="+`value $arg`"
+done
+
+clac "$expression"

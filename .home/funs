@@ -1,0 +1,34 @@
+
+function pro { [[ "$workspace" ]] || local workspace="$PROJECTS"
+  mkdir -p "$workspace" || return 1
+  if [[ ! "$1" ]]; then cd "$workspace"; return; fi
+  local target="`find "$workspace" -maxdepth 1 -type d|grep "$1"|head -1`"
+  [[ ! "$target" ]] && return 1 || cd "$target"
+  [[ "$2" ]] && shift && $@ .
+}
+
+function shtyle {
+  export PROMPT_ICON=${1:-'+-'} PROMPT_COLOR=${2:-'white'} PROMPT_ACCENT=${3:-'white'} PROMPT_BODY=${4:-'default'}
+  echo "$PROMPT_ICON" "$PROMPT_COLOR" "$PROMPT_ACCENT" "$PROMPT_BODY" > "$HOME/.shtyle"
+}
+touch "$HOME/.shtyle" && shtyle `<"$HOME/.shtyle"`
+
+function chhome {
+  local HOME="`realpath "$1"`" && shift
+  [[ ! -d "$HOME" ]] && echo "$HOME is not a directory." && return 1
+  exec $SHELL $@
+}
+
+function wh { [[ "$1" ]] && local _command_="`command -v "$1" 2> /dev/null`"
+  if [[ "$_command_" == "$1" ]]; then type "$_command_"
+  elif is binary "$_command_"; then echo -e "$1 is a binary: $_command_"
+  elif is file "$_command_"; then echo -e "$1 is a script: $_command_\n`cat "$_command_"`"
+  elif ! is empty "$_command_"; then echo "$_command_"
+  else echo "$1 not found"; fi
+}
+
+function ipcmd {
+  local ipcmd=${ipcmd:-"ip a"}
+  if [[ "$1" ]]; then ipcmd+=" | grep '$@'"; fi
+  bash -c "$ipcmd"
+}

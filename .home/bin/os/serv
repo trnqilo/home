@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set  -e
+
+function _serv_darwin { brew services "$operation" $service; }
+
+function _serv_freebsd { sudo service "$service" "$operation";}
+
+function _serv_freebsd { sudo rcctl "$operation" $service; }
+
+function _serv_linux { sudo systemctl "$operation" $service; }
+
+function _arp {
+  if quietly 'which arp'; then
+    arp -a
+  elif quietly 'which ip'; then
+    ip n | sudo nslookup
+  else
+    echo "idk how to arp on this $whereami."
+  fi
+}
+
+[[ ! "$1" ]] && exit 1
+if is any "$1" 'up' 'u'; then operation='start'
+elif is any "$1" 'down' 'd'; then operation='stop'
+elif is any "$1" 'res' 'r'; then operation='restart'
+elif is any "$1" 'stat' 's'; then operation='status'
+elif is same "$1" 'arp'; then _arp; exit
+else operation="$1"; fi
+
+shift && service="$@"
+whereami=`whereami`
+_serv_$whereami

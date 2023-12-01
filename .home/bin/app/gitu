@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == '.' ]]; then shift
+  git_url="`git remote -v | head -1 | gawk '{print $2}'`"
+  if [[ ! "$git_url" ]]; then
+    echo 'repo not found'
+    exit 1
+  elif echo "$git_url" | grep -q '^git@'; then
+    git_url="${git_url//':'/'/'}"; git_url="${git_url//'//'/'/'}"
+    git_url="${git_url//'git@'/'https://'}"
+  fi
+else
+  git_url="${GHUB_URL:-"https://github.com"}"
+fi
+
+open "$git_url/$@"

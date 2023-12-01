@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+[[ ! "$2" ]] && echo 'usage: rsyncsourcedest /path/to/source /path/to/dest' || \
+  screen -m -S syncwithrsync rsync -a --progress --checksum $1/. $2
+                                               # --size-only
