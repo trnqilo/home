@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+
+if [[ "$1" == '-q' ]]; then shift
+  $0 $@ &>/dev/null
+elif [[ "$1" ]]; then
+  whereami windows && ping='ping -w 1 -n 1' || ping='ping -W 1 -c 1'
+  ip="`$ping $@ | $awk '{print $3}' | head -1`"
+  ip="${ip//'('/}"
+  ip="${ip//')'/}"
+  [[ "$ip" ]] && echo "${ip//':'/}" || exit 1
+fi
