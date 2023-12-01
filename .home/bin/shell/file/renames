@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+
+dir="$1"
+search="$2"
+replace="$3"
+if [[ -z "$dir" || -z "$search" || -z "$replace" ]]; then
+  echo "$0 <directory> <search_string> <replace_string>"; exit 1
+fi
+find "$dir" -depth -name "*$search*" | while IFS= read -r path; do
+  base=$(basename "$path")
+  dirn=$(dirname "$path")
+  newbase="${base//$search/$replace}"
+  newpath="$dirn/$newbase"
+  if [[ "$path" != "$newpath" ]]; then
+    mv "$path" "$newpath"
+    echo "renamed: $path → $newpath"
+  fi
+done
