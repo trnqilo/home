@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+# if ! [[ "$2" ]]; then echo 'eg. stash label folder1 folder2...'; exit; fi
+
+# cd "${STASH_HOME:-.}"
+# stash="$1"; shift
+# mkdir -p "./.stash/$stash"
+# if [[ "$1" == 'pop' ]]; then
+
+# fi
+
+# while [[ "$1" ]]; do
+# done
