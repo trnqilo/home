@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+env="$@" cfg="${cfg:-nonsole.cfg}" prompt="`parrot yellow 'λ '`"
+cd "${env:-.}"
+until false; do if read -rep "$prompt" func key value; then flags=-a
+  [[ -f "$cfg" ]] || touch "$cfg"
+  if [[ "$func" =~ ^'alias'$|^'bind'$ ]]; then input="$func $key \"$value\";"
+  elif [[ "$func" == 'say' ]]; then input="bind $key \"say $value\";"
+  elif [[ "$func" == 'team' ]]; then input="bind $key \"say_team $value\";"
+  elif [[ "$func" == '/'* ]]; then ${func/\//} $key $value; continue
+  elif [[ "$func" == 'cat' ]]; then cat "$cfg"; continue
+  elif [[ "$func" == 'rez' ]]; then input= flags=
+  elif [[ "$func" == 'qq' ]]; then exit
+  elif [[ "$value" ]]; then input="$func $key $value;"
+  elif [[ "$key" ]]; then input="$func $key;"
+  elif [[ "$func" ]]; then input="$func;"
+  else continue; fi
+  tee $flags "$cfg" <<< "$input"
+else break; fi; done
