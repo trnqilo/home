@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'model' ]]; then
+  if [[ -f '/proc/cpuinfo' ]]; then
+    grep '^model name' /proc/cpuinfo | head -1 | $awk '{$1=$2=$3="";print $0}' | xargs
+  elif type sysctl &>/dev/null; then
+    sysctl -n machdep.cpu.brand_string
+  fi
+elif [[ "$1" == 'clocks' ]]; then
+  if type lscpu &>/dev/null; then lscpu -e=MHz | tail -n +2 | $awk '{printf "%.2f GHz\t", $1/1000}'
+  elif [[ -f '/proc/cpuinfo' ]]; then grep 'cpu.*MHz' /proc/cpuinfo  | $awk '{printf "%.2f GHz\t", $4/1000}'; fi
+elif whereami windows; then echo "$NUMBER_OF_PROCESSORS"
+elif whereami darwin bsd; then sysctl -n hw.ncpu
+elif type nproc &>/dev/null; then nproc # --all
+elif type lscpu &>/dev/null; then lscpu | grep '^CPU(s): \+[1-9]\+$' | $awk '{print $2}'; fi
