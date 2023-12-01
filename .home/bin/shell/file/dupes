@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+function dupefiles {
+  find . -type f -exec md5sum {} + | grep -v '^$' | sort | uniq -w32 -dD \
+    | while read sum file; do dupefile; done
+}
+
+function dupefile {
+  if [[ "$file" ]]; then if newsum; then printf '# '; fi
+    echo "dedupe '${file//"'"/"'\"'\"'"}' $sum"
+  fi
+}
+
+function newsum { grep -q ".*$sum.*" <<< "$sums" && return 1 || sums+="$sum"; }
+
+if [[ "$1" == 'sh' ]]; then shift; $0 "$@" | tee ./dedupe-`date +%s`.sh; exit
+elif [[ "$1" ]]; then cd "$@"; fi
+echo -e "cd '`pwd`'\nfunction dedupe { rm -vf \"\$1\"; echo \"\$1 \$2\"; }"
+dupefiles

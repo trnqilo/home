@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+function _fsluks_mount {
+  local device="${1/\/dev\//}"
+  local mount="${2:-/mnt/$volume}"
+  local volume=${3:-`S=_ rando adj noun`}
+  sudo cryptsetup open /dev/$device $volume
+  sudo mount /dev/mapper/$volume "$3"
+}
+
+function _fsluks_unmount {
+ local mount="$1"
+ local volume="$2"
+ sudo umount $mount
+ sudo cryptsetup close $volume
+}
+
+function _fsluks_ { echo fsluks mount sdx /home/mount myvolume; }
+
+_fsluks_$@
