@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+# grep="$@"
+# if [[ "$grep" ]]; then
+#   grep="${grep//' '/'\|'}\|ProcessName\|\-\-\-\-"
+# fi
+
+# powershell Get-Process -IncludeUserName | grep -i "${grep:-.*}"
+if [[ "$1" ]]; then
+  tasklist -fi "USERNAME eq $1"
+else tasklist; fi
