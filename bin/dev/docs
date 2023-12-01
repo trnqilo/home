@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+
+function _doc_agile { echo '# agile
+
++ individuals and interactions over processes and tools
++ working software over comprehensive documentation
++ customer collaboration over contract negotiation
++ responding to change over following a plan
+
++ our highest priority is to satisfy the customer through the early and continuous delivery of valuable software
++ welcome changing requirements, even late in development
+  + agile processes harness change for the customer’s competitive advantage
++ deliver working software frequently, from a couple of weeks to a couple of months, with a preference to the shorter timescale
++ business people and developers must work together daily throughout the project
++ build projects around motivated individuals
+  + give them the environment and support they need, and trust them to get the job done
++ the most efficient and effective method of conveying information to and within a development team is face-to-face conversation
++ working software is the primary measure of progress
++ agile processes promote sustainable development
+  + the sponsors, developers, and users should be able to maintain a constant pace indefinitely
++ continuous attention to technical excellence and good design enhances agility
++ simplicity–the art of maximizing the amount of work not done–is essential
++ the best architectures, requirements, and designs emerge from self-organizing teams
++ at regular intervals, the team reflects on how to become more effective, then tunes and adjusts its behavior accordingly' \
+  | markdown
+}
+
+function _doc_bigo { echo '
+Structure	Read Θ	Search Θ	Insert Θ	Delete Θ	Read O	Search O	Insert O	Delete O	Space O
+Array	Θ(1)	Θ(n)	Θ(n)	Θ(n)	O(1)	O(n)	O(n)	O(n)	O(n)
+Stack	Θ(n)	Θ(n)	Θ(1)	Θ(1)	O(n)	O(n)	O(1)	O(1)	O(n)
+Queue	Θ(n)	Θ(n)	Θ(1)	Θ(1)	O(n)	O(n)	O(1)	O(1)	O(n)
+Singly-Linked List	Θ(n)	Θ(n)	Θ(1)	Θ(1)	O(n)	O(n)	O(1)	O(1)	O(n)
+Doubly-Linked List	Θ(n)	Θ(n)	Θ(1)	Θ(1)	O(n)	O(n)	O(1)	O(1)	O(n)
+Skip List	Θ(log(n))	Θ(log(n))	Θ(log(n))	Θ(log(n))	O(n)	O(n)	O(n)	O(n)	O(n log(n))
+Hash Table	N/A	Θ(1)	Θ(1)	Θ(1)	N/A	O(n)	O(n)	O(n)	O(n)
+Binary Search Tree	Θ(log(n))	Θ(log(n))	Θ(log(n))	Θ(log(n))	O(n)	O(n)	O(n)	O(n)	O(n)
+Cartesian Tree	N/A	Θ(log(n))	Θ(log(n))	Θ(log(n))	N/A	O(n)	O(n)	O(n)	O(n)
+B-Tree	Θ(log(n))	Θ(log(n))	Θ(log(n))	Θ(log(n))	O(log(n))	O(log(n))	O(log(n))	O(log(n))	O(n)
+Red-Black Tree	Θ(log(n))	Θ(log(n))	Θ(log(n))	Θ(log(n))	O(log(n))	O(log(n))	O(log(n))	O(log(n))	O(n)
+Splay Tree	N/A	Θ(log(n))	Θ(log(n))	Θ(log(n))	N/A	O(log(n))	O(log(n))	O(log(n))	O(n)
+AVL Tree	Θ(log(n))	Θ(log(n))	Θ(log(n))	Θ(log(n))	O(log(n))	O(log(n))	O(log(n))	O(log(n))	O(n)
+KD Tree	Θ(log(n))	Θ(log(n))	Θ(log(n))	Θ(log(n))	O(n)	O(n)	O(n)	O(n)	O(n)' \
+| column -s $'\t' -t
+echo
+echo '
+Algorithm	Best Ω	Avg Θ	Worst O	Space O
+Quicksort	Ω(n log(n))	Θ(n log(n))	O(n^2)	O(log(n))
+Mergesort	Ω(n log(n))	Θ(n log(n))	O(n log(n))	O(n)
+Timsort	Ω(n)	Θ(n log(n))	O(n log(n))	O(n)
+Heapsort	Ω(n log(n))	Θ(n log(n))	O(n log(n))	O(1)
+Bubble Sort	Ω(n)	Θ(n^2)	O(n^2)	O(1)
+Insertion Sort	Ω(n)	Θ(n^2)	O(n^2)	O(1)
+Selection Sort	Ω(n^2)	Θ(n^2)	O(n^2)	O(1)
+TreeSort	Ω(n log(n))	Θ(n log(n))	O(n^2)	O(n)
+ShellSort	Ω(n log(n))	Θ(n(log(n))^2)	O(n(log(n))^2)	O(1)
+BucketSort	Ω(n+k)	Θ(n+k)	O(n^2)	O(n)
+RadixSort	Ω(nk)	Θ(nk)	O(nk)	O(n+k)
+CountingSort	Ω(n+k)	Θ(n+k)	O(n+k)	O(k)
+Cubesort	Ω(n)	Θ(n log(n))	O(n log(n))	O(n)
+' | column -s $'\t' -t
+echo
+echo '
+Pattern	Example	Recurrence	Time Complexity
+Linear Recursion	Factorial	T(n) = T(n - 1) + O(1)	O(n)
+Binary Recursion	Fibonacci (naive)	T(n) = T(n - 1) + T(n - 2) + O(1)	O(2ⁿ)
+Divide and Conquer	Merge Sort	T(n) = 2T(n/2) + O(n)	O(n log n)
+Tree Recursion	Towers of Hanoi	T(n) = 2T(n - 1) + O(1)	O(2ⁿ)
+Multiple Recursions	Some backtracking	T(n) = kT(n - 1) + O(1)	O(kⁿ)
+' | column -s $'\t' -t
+}
+
+function _doc_droids {
+  function format {
+    local text="$@" ansi_color="`ansicode bright,$PROMPT_COLOR`"
+    text="${text//'-'/"\e[0;${ansi_color}-\e[0;67m"}"
+    text="${text//'+'/"\e[0;${ansi_color}+\e[0;67m"}"
+    text="${text//'|'/"\e[0;${ansi_color}|\e[0;67m"}"
+    text="${text//'◄'/"\e[0;${ansi_color}◄\e[0;67m"}"
+    text="${text//'▼'/"\e[0;${ansi_color}▼\e[0;67m"}"
+    text="${text//'►'/"\e[0;${ansi_color}►\e[0;67m"}"
+    text="${text//'▲'/"\e[0;${ansi_color}▲\e[0;67m"}"
+    echo -e "$text"
+  }
+  echo $'  OS,SDK,Name,JDK
+  16,36,Baklava,17
+  15,35,VanillaIceCream,17
+  14,34,UpsideDownCake,17
+  13,33,Tiramisu,11
+  12,31-32,SnowCone,11
+  11,30,RedVelvetCake,8
+  10,29,QuinceTart,8
+   9,28,Pie,8
+   8,26-27,Oreo,8
+   7,24-25,Nougat,8
+   6,23,Marshmallow,8
+   5,21-22,Lollipop,8
+   4,14-20,ICS JellyBean KitKat,8
+   3,11-13,Honeycomb,8
+   2,5-10,Eclair Froyo Gingerbread,8
+   1,1-4,PetitFour Donut Cupcake,6
+  ' | column -s ',' -t
+  format '
+
+                activity lifecycle
+
+                     start
+     user nav          |
++-------------------►onCreate()
+|                      |
+|                    onStart()◄---------------onRestart()
+|                      |                          ▲
+|                    onResume()◄---------------+  |
+|                      |                       |  |
+kill proc             run                      |  |
+|                      |        user app nav   |  |
+os mem req-----------onPause()-----------------+  |
+|                      |                          | user nav
++--------------------onStop()---------------------+
+                       |
+                     onDestroy()
+                       |
+                      stop
+'
+  format '
+                fragment lifecycle
+
+ start                                         stop
+   |                                            |
+onAttach()---+                               onDetach()◄------+
+   |         |                                  |             |
+onCreate()   |                               onDestroy()      |
+   |         ▼                                  |             |
+onCreateView()◄----------------------------- onDestroyView()--+
+   |                                            |
+onActivityCreated()                             |
+   |                                            |
+onStart()◄-----------------------------------onStop()
+   |                                            |
+onResume()----------------run---------------►onPause()
+'
+}
+
+function _doc_http { echo '+ 100 Continue
++ 101 Switching Protocols
++ 102 Processing Deprecated
++ 103 Early Hints
++ 200 OK
++ 201 Created
++ 202 Accepted
++ 203 Non-Authoritative Information
++ 204 No Content
++ 205 Reset Content
++ 206 Partial Content
++ 207 Multi-Status (WebDAV)
++ 208 Already Reported (WebDAV)
++ 226 IM Used (HTTP Delta encoding)
++ 300 Multiple Choices
++ 301 Moved Permanently
++ 302 Found
++ 303 See Other
++ 304 Not Modified
++ 305 Use Proxy Deprecated
++ 306 unused
++ 307 Temporary Redirect
++ 308 Permanent Redirect
++ 400 Bad Request
++ 401 Unauthorized
++ 402 Payment Required
++ 403 Forbidden
++ 404 Not Found
++ 405 Method Not Allowed
++ 407 Proxy Authentication Required
++ 408 Request Timeout
++ 409 Conflict
++ 410 Gone
++ 411 Length Required
++ 412 Precondition Failed
++ 413 Content Too Large
++ 414 URI Too Long
++ 415 Unsupported Media Type
++ 416 Range Not Satisfiable
++ 417 Expectation Failed
++ 418 Im a teapot
++ 419 Page Expired
++ 420 Enhance
++ 421 Misdirected Request
++ 422 Unprocessable Content (WebDAV)
++ 423 Locked (WebDAV)
++ 424 Failed Dependency (WebDAV)
++ 425 Too Early Experimental
++ 426 Upgrade Required
++ 428 Precondition Required
++ 429 Too Many Requests
++ 431 Request Header Fields Too Large
++ 451 Unavailable For Legal Reasons
++ 500 Internal Server Error
++ 501 Not Implemented
++ 502 Bad Gateway
++ 503 Service Unavailable
++ 504 Gateway Timeout
++ 505 HTTP Version Not Supported
++ 506 Variant Also Negotiates
++ 507 Insufficient Storage (WebDAV)
++ 508 Loop Detected (WebDAV)
++ 510 Not Extended
++ 511 Network Authentication Required' \
+  | grep " ${1:-[0-9][0-9][0-9]}" \
+  | markdown
+}
+
+function _doc_osi { echo '# open systems interconnection model
+
++ application - end user layer, eg. http, ftp, dns, ssh
++ presentation - syntax/format, eg. encryption, compression
++ session - connection between endpoints, eg. sync and send to ports, sockets
++ transport - proto tcp/udp
++ network - logical/ip address, path/route, packets
++ data link - physical/mac address, frames
++ physical - raw bit stream' | markdown
+}
+
+function markdown {
+  type bat &>/dev/null && bat --language=markdown || cat
+}
+
+if type _doc_$1 &>/dev/null; then _doc_$@; fi

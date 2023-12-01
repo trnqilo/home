@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" ]]; then cd "$*"; fi
+
+if   ls ./*/*/main/AndroidManifest.xml > /dev/null 2>&1; then ide='studio'
+elif ls ./*.uproject > /dev/null 2>&1; then ide='rider'
+elif ls ./Cargo.toml > /dev/null 2>&1; then ide='rustrover'
+elif ls ./Package.swift > /dev/null 2>&1; then ide='xcode'
+elif ls ./*.xcodeproj > /dev/null 2>&1; then ide='xcode'
+elif ls ./*.xcworkspace > /dev/null 2>&1; then ide='xcode'
+elif ls ./package.json > /dev/null 2>&1; then ide='idea'
+elif ls ./pubspec.yaml > /dev/null 2>&1; then ide='idea'
+elif ls ./*.sln > /dev/null 2>&1; then ide='start devenv'
+elif ls ./.idea > /dev/null 2>&1; then ide='idea'
+elif ls ./.git > /dev/null 2>&1; then ide='idea'
+else surely project not found, open in idea || exit; ide='idea'
+fi
+
+if type "$ide" &>/dev/null; then
+  $ide . > /dev/null 2>&1 &
+else
+  echo "not found: $ide"
+fi

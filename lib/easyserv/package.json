@@ -1,0 +1,14 @@
+{
+  "name": "easyserv",
+  "version": "0.1.0",
+  "private": true,
+  "description": "config based test server server",
+  "main": "easyserv.js",
+  "scripts": {
+    "start": "node easyserv.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "body-parser": "^1.20.2"
+  }
+}
