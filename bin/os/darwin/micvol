@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -e
+
+target_volume=$1
+
+current_volume=$(osascript -e 'tell application "System Events" to get input volume of (first input device whose name is "Microphone")')
+
+if (( current_volume == target_volume )); then
+  echo "Volume is already at target."
+  exit 0
+fi
+
+if (( current_volume > target_volume )); then
+  for (( vol = current_volume; vol >= target_volume; --vol )); do
+    sleep 0.1 &
+    osascript -e "tell application \"System Events\" to set input volume of (first input device whose name is \"Microphone\") to $vol"
+    wait
+  done
+else
+  for (( vol = current_volume; vol <= target_volume; ++vol )); do
+    sleep 0.1 &
+    osascript -e "tell application \"System Events\" to set input volume of (first input device whose name is \"Microphone\") to $vol"
+    wait
+  done
+fi

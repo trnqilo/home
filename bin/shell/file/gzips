@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+# while [[ "$1" ]]; do archive="$1"; shift
+#   zip -r "${archive%/}.zip" "$archive" || echo -e "zip failed\n$archive"
+# done
+
+if [[ -t 0 ]]; then
+  if [[ -n "$1" && -f "$1" ]]; then
+    gzip -c "$1" | base64
+  fi
+else
+  gzip -c | base64
+fi
+
+# base64 -d "$1" | gzip -dc
+
+# xz
+# base64 | xz -c
+# base64 -d | xz -dc
