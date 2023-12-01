@@ -1,0 +1,9 @@
+no-resolv
+server=1.1.1.1
+addn-hosts=/etc/masqs/hosts
+addn-hosts=/etc/masqs/hosts.blocklist
+addn-hosts=/etc/masqs/hosts.guests
+dhcp-ignore=tag:kage,tag:!masq
+domain-needed
+bogus-priv
+dhcp-authoritative

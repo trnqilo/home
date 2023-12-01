@@ -1,0 +1,2 @@
+interface=INTERFACE
+dhcp-range=set:masq,SUBNET.2,SUBNET.254,72h
