@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+function _web_zon {
+  if [[ "$1" =~ ^o(rder)?s?$ ]]; then shift
+    urlpath="gp/legacy/order-history?opt=ab&search=$@"
+  elif [[ "$1" ]]; then
+    query="$@"
+    urlpath="s?k=${query// /+}"
+  else
+    urlpath='orders'
+  fi
+  open "https://www.amazon.com/$urlpath"
+}
+
+function _web_via { open 'https://usevia.app/'; }
+
+function _web_microc {
+  if [[ "$1" ]]; then query="$@"
+    url_path="search/search_results.aspx?Ntt=${query// /+}"
+  fi
+  open "https://www.microcenter.com/$url_path"
+}
+
+function _web_reddit {
+  [[ "$1" ]] && subreddit="/r/$1" || subreddit=
+  open "https://www.reddit.com/$subreddit"
+}
+
+function _web_massd {
+  if [[ "$1" ]]; then url_path="search/$@"; fi
+  open "https://drop.com/${url_path:-transactions}"
+}
+
+function _web_lofi { open 'https://www.youtube.com/watch?v=jfKfPfyJRdk'; }
+
+function _web_outlook { open "https://outlook.live.com/mail/${1:-0}"; }
+
+function _web_tid {
+  baseUrl='https://listen.tidal.com'
+  if [[ "$1" ]]; then search="search?q=$@"; fi
+  open "$baseUrl/$search"
+}
+
+function address { local address='https://'
+  IFS='.' read -ra tokens <<< "$1"
+  if [ "${#tokens[@]}" -eq 1 ]; then address+="${1}.com"
+  else address+="$1"; fi
+  echo "$address"
+}
+
+declare -A webs=(
+  ['/.']='slashdot.org'
+  ['speed']='speedtest.net'
+  ['speedtest']='speedtest.net'
+)
+
+if type "_web_$1" &>/dev/null; then _web_"$@"
+elif [[ ! "$1" ]]; then open https://google.com
+else
+  while [[ "$1" ]]; do
+    address=${webs["$1"]:-$1}
+    open `address $address`
+    shift
+  done
+fi

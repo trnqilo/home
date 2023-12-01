@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e -o pipefail
+
+user_prompt="$@"
+if [[ ! "$1" ]]; then echo 'no prompt provided'; exit 1
+elif [[ "$1" == '/review' ]]; then user_prompt+=$'\n'$(<"$DOTHOME/conf/agents/review.md"); fi
+echo "$user_prompt"$'\n'
+surely run this prompt
+if [[ "$bot" == 'claude' ]]; then
+  flags='--verbose --print'
+  if [[ "$pwnage" == true ]]; then
+    claude --dangerously-skip-permissions $flags "$user_prompt"
+  else
+    claude --permission-mode acceptEdits $flags "$user_prompt"
+  fi
+else
+  flags='exec --sandbox workspace-write --skip-git-repo-check'
+  if [[ -t 0 ]]; then
+    codex $flags --add-dir "$CTX" "$user_prompt" < /dev/null
+  else
+    codex $flags --add-dir "$CTX" -
+  fi
+fi
