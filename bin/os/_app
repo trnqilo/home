@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+dirs=(
+  "/Applications"
+  "$HOME/Applications"
+  "/System/Library/CoreServices"
+)
+
+for dir in "${dirs[@]}"; do
+  if [ -d "$dir" ]; then
+    find "$dir" -type d -name "*.app" -prune -print 2>/dev/null | LC_ALL=C sort -f
+  fi
+done
