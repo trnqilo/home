@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  LZD_CONFIG="$HOME/Library/Application Support/jesseduffield/lazydocker"
+else
+  LZD_CONFIG="$HOME/.config/jesseduffield/lazydocker"
+fi
+
+exec docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$LZD_CONFIG":/.config/jesseduffield/lazydocker \
+  lazyteam/lazydocker "$@"
