@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == '-h' || "$2" == '-h' ]]; then
+  headless='--type headless'; [[ "$1" == '-h' ]] && shift
+fi
+
+function list_vms { VBoxManage list vms | $awk -F\" '{print $2}'; }
+function vm_named { list_vms | grep "$1" | head -1; }
+
+if [[ ! "$1" ]]; then list_vms
+elif [[ "$1" == 'zzz' ]]; then VBoxManage controlvm `vm_named $2` savestate
+elif [[ "$1" == 'off' ]]; then VBoxManage controlvm `vm_named $2` acpipowerbutton
+elif [[ "$1" == 'halt' ]]; then VBoxManage controlvm `vm_named $2` poweroff
+elif [[ "$1" == *'.img' ]]; then
+  VBoxManage convertfromraw $1 ${1//.img/.vdi} --format VDI
+elif [[ "$1" == *'.vdi' ]]; then
+  VBoxManage clonehd "$1" "${1/.vdi/.img}" --format RAW
+else
+  VBoxManage startvm `vm_named $1` $headless
+fi

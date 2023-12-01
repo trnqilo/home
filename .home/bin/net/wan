@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+if pingonce "${1:-github.com}" &>/dev/null; then echo connected
+else echo offline; exit 1; fi
