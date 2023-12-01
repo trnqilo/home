@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'clear' ]]; then clear=true; shift; else clear=; fi
+export command="${command:-$@}"
+export start_message="`parrot yellow "start '$command'"`"
+export fail_message=`parrot magenta "failed '$command'"`
+
+function stop {
+  if [[ "$clear" ]]; then clear; fi
+  read -p "$start_message"
+  if [[ "$clear" ]]; then clear; fi
+  parrot cyan "running '$command'"
+}
+
+function pause {
+  if [[ "$1" == 'fail' ]]; then read -p "$fail_message"; stop
+  elif [[ ! "$sleep" ]]; then stop
+  else sleep $sleep; fi
+}
+
+if [[ ! "$sleep" ]]; then stop; fi
+while :; do $command && pause || pause fail; done
