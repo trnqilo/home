@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+function _fsimg_qcow {
+  qemu-img convert -f qcow2 -O raw "$1" "${1/.qcow2/.img}"
+}
+
+function _fsimg_grow {
+  if [[ "$2" ]]; then loopsize="$2"
+  else read -p 'add MB [10240] ' loopsize; fi
+  loopsize=${loopsize:-'10240'}
+  surely "append $loopsize MB to $1"
+  sudo bash -c "dd if=/dev/zero bs=1M count=$loopsize status=progress >> '$1'"
+}
+
+function _fsimg_resize { sudo e2fsck -f "$1"; sudo resize2fs "$1"; }
+
+_fsimg_$@
