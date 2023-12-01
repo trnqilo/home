@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+host="$1"
+port="$2"
+dest="${3:-$host}"
+local_port="${4:-$port}"
+
+if [[ "$port" && "$local_port" && "$host" && "$dest" ]]; then
+  if ! (( 1024 < port )); then sudo=sudo; fi
+  echo "tunneling to $dest:$port from $host to localhost:$local_port..."
+  $sudo ssh -NL $local_port:$dest:$port $host
+  # $sudo ssh -N -L $local_port:$dest:$port $host "$@"
+else
+  echo 'tunnel host port [dest] [local_port]'
+fi
+
+# ssh -D $port $host # dynamic tunnel using SOCKS proxy

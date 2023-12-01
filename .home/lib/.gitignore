@@ -1,0 +1,14 @@
+target/
+.idea/
+*.iml
+*.lock
+groovy*.jar
+.DS_Store
+.build/
+Packages/
+xcuserdata/
+DerivedData/
+.swiftpm/
+.netrc
+.vscode/
+node_modules/
