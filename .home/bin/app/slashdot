@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+FEED_URL="https://rss.slashdot.org/Slashdot/slashdotMain"
+LIMIT="${1:-0}"
+
+raw_feed="$(curlcache for 4hours "$FEED_URL")" || {
+  echo "Error: failed to fetch $FEED_URL" >&2
+  exit 1
+}
+
+markdown="$(echo "$raw_feed" | $awk -v limit="$LIMIT" '
+  function extract(s, tag,    re, rest, content) {
+    re = "<" tag "[^>]*>"
+    if (!match(s, re)) return ""
+    rest = substr(s, RSTART + RLENGTH)
+    re = "</" tag ">"
+    if (!match(rest, re)) return ""
+    content = substr(rest, 1, RSTART - 1)
+
+    # Unwrap CDATA
+    gsub(/<!\[CDATA\[/, "", content)
+    gsub(/\]\]>/, "", content)
+    return content
+  }
+
+  # IMPORTANT: decode entities BEFORE stripping tags. Some feeds (Slashdot
+  # included) HTML-entity-escape boilerplate markup (e.g. "&lt;p&gt;") inside
+  # the description. If tags are stripped first, that escaped markup later
+  # decodes into literal, unstripped <p> tags in the final output.
+  function strip_html(s) {
+    # Numeric/common named entities first
+    gsub(/&quot;/, "\"", s)
+    gsub(/&#0?39;/, "'"'"'", s)
+    gsub(/&apos;/, "'"'"'", s)
+    gsub(/&nbsp;/, " ", s)
+    gsub(/&mdash;/, "-", s)
+    gsub(/&ndash;/, "-", s)
+    gsub(/&hellip;/, "...", s)
+    gsub(/&lsquo;/, "'"'"'", s)
+    gsub(/&rsquo;/, "'"'"'", s)
+    gsub(/&ldquo;/, "\"", s)
+    gsub(/&rdquo;/, "\"", s)
+    gsub(/&lt;/, "<", s)
+    gsub(/&gt;/, ">", s)
+    # &amp; must be decoded last, since other entities are spelled with "&"
+    gsub(/&amp;/, "\\&", s)
+
+    # Now strip real (or just-decoded) HTML tags
+    gsub(/<[^>]*>/, "", s)
+
+    gsub(/[ \t]+/, " ", s)
+    gsub(/^ +| +$/, "", s)
+    return s
+  }
+
+  BEGIN { RS = "<item"; count = 0 }
+  NR > 1 {
+    if (limit+0 > 0 && count >= limit) next
+    count++
+
+    title       = strip_html(extract($0, "title"))
+    link        = strip_html(extract($0, "link"))
+    description = strip_html(extract($0, "description"))
+
+    # RSS 2.0 feeds use <pubDate>; RDF/RSS 1.0 feeds (like Slashdots
+    # classic backend) use <dc:date> instead. Try both.
+    pubdate = extract($0, "pubDate")
+    if (pubdate == "") pubdate = extract($0, "dc:date")
+    pubdate = strip_html(pubdate)
+
+    printf "## [%d] %s\n\n", count, title
+    if (pubdate != "") printf "**Date:** %s  \n\n", pubdate
+    # if (link    != "") printf "**Link:** %s\n\n", link
+    if (description != "") printf "%s\n\n", description
+    print "---\n"
+  }
+  END {
+    printf "*Total items shown: %d*\n", count
+  }
+')"
+
+if [[ -z "$markdown" ]]; then
+  echo "No items found in feed (or feed format unexpected)." >&2
+  exit 1
+elif command -v bat &> /dev/null; then
+  echo "$markdown" | grep -v 'Read more of this story at Slashdot.' \
+    | bat --language markdown --style=plain --paging=always --pager="less"
+else
+  echo "$markdown"
+fi
