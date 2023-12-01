@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+source /etc/default/housesitter
+
+if [[ "$CAP_ALERT" == true ]]; then /usr/local/bin/_hs_message 'MOVEMENT'
+elif [[ "$CAP_ALERT" == 'night' ]]; then hour=`date +%H`
+  if [[ "$hour" -lt 7 ]] || [[ "$hour" -gt 19 ]]; then
+    /usr/local/bin/_hs_message 'MOVEMENT'
+  fi
+fi
+
+/usr/local/bin/_hs_upload "$1"
