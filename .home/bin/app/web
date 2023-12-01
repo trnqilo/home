@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+function address { local address='https://'
+  IFS='.' read -ra tokens <<< "$1"
+  if [ "${#tokens[@]}" -eq 1 ]; then address+="${1}.com"
+  else address+="$1"; fi
+  echo "$address"
+}
+while [[ "$1" ]]; do open "`address $1`"; shift; done

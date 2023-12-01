@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ ! "$1" ]]; then screen -ls; exit
+elif [[ "$1" == 'wipe' ]]; then
+  ps aux | grep '[S]CREEN' | $awk '{print $2}' \
+    | if read pids; then kill -9 $pids; fi
+#   screen -wipe | tail -1 | $awk '{print $4}' | $sed 's/\.[[:space:]]*$//' \
+#     | if read sockets; then rm -v "$sockets"/*; fi
+  exit
+elif [[ "$1" =~ ^a(ttach)?$ ]]; then shift; screen -x $@; exit
+elif [[ "$1" =~ ^d(etach)?$ ]]; then detach='-d'; shift; fi
+
+args+=" $detach -m -S" label="$@" label=${label// /_}
+
+if screen -ls | grep -q "$label"; then
+  [[ "$detach" ]] || screen -x "$label"
+else
+  screen $args "$label" "$@"
+fi
