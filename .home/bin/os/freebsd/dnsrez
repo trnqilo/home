@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+sudo tee /etc/resolv.conf << 'EOF' > /dev/null
+nameserver 1.1.1.1
+options edns0
+EOF
