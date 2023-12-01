@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+if [[ "$owner" ]]; then taskkill -f -fi "USERNAME eq $owner"
+else while [[ "$1" ]]; do taskkill -im "$1.exe" -f; shift; done; fi

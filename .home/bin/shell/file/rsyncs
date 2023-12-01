@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [[ ! "$2" ]]; then echo 'usage: rsyncs /path/to/source /path/to/dest'
+else # --info=progress2 -e "ssh -T -x -o Compression=no -p ${port:-22}"
+  rsync -az --human-readable --no-inc-recursive --progress --checksum --ignore-errors \
+    "$1/." "$2"
+fi

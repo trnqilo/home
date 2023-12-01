@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+if curlonce 'https://oliqnrt.web.app/ping' 'pong' &>/dev/null; then echo connected
+else echo offline; exit 1; fi

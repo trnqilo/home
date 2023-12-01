@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'dig' ]]; then dig @resolver1.opendns.com ANY myip.opendns.com +short
+elif [[ "$1" == 'host' ]]; then host myip.opendns.com resolver1.opendns.com | tail -1 | $awk '{print $4}'
+else age=1hour curlcache https://api.ipify.org; fi
