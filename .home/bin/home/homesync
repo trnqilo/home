@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" != '-x' ]] && type homeup &>/dev/null; then exit; fi
+cd
+
+mv .git.home .git &>/dev/null ||:
+mv .home/readme . &>/dev/null ||:
+mv .home/license . &>/dev/null ||:
+
+if git fetch &>/dev/null; then
+  branch="`git rev-parse --abbrev-ref HEAD`"
+  git diff origin/$branch --name-status | parrot magenta
+  git reset --hard origin/$branch ||:
+fi
+
+mv .git .git.home
+mv readme .home/ &>/dev/null ||:
+mv license .home/ &>/dev/null ||:
