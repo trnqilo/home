@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ -f '/var/log/syslog' ]]; then log='/var/log/syslog'; fi
+${1:-cat} "${@:2}" "$log"

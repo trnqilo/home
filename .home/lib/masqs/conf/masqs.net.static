@@ -1,0 +1,3 @@
+interface=INTERFACE
+dhcp-range=set:kage,SUBNET.1,SUBNET.254,72h
+# dhcp-host=MAC,SUBNET.x,HOSTNAME,set:masq

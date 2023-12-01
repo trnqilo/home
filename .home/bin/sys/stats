@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+if [[ "$1" =~ ^[0-9]+$ ]]; then watch -tcn $1 $0; exit; fi
+
+function watts {
+  get_energy='sudo cat /sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj'
+$get_energy | if read energy; then sleep 2
+  $awk '{ printf "%.2f", ($2 - $1) / (2 * 1e6) }' <<< "$energy `$get_energy`"
+  printf 'W\n'
+fi
+}
+
+echo "
+`mobo`
+
+`cpus` cpus
+
+`mems`
+
+`clocks`
+
+`temps`
+
+`batt`
+
+`if type uptime &>/dev/null; then echo; uptime | xargs; fi`
+
+" | $sed '/^$/N;/^\n$/D'
