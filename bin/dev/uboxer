@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+function list_vms { utmctl list; }
+function vm_named { list_vms | grep "$1" | head -1; }
+
+if [[ ! "$1" ]]; then echo list_vms
+elif [[ "$1" == 'off' ]]; then VBoxManage controlvm `vm_named $2` acpipowerbutton
+elif [[ "$1" == 'halt' ]]; then VBoxManage controlvm `vm_named $2` poweroff
+# elif [[ "$1" == 'ssh' ]]; then # eg. uboxer ssh name 2222 username hostname
+#   utmctl start "$2" ||:
+#   ssh_command="ssh -p ${3:-22} ${4:-$USER}@${5:-192.168.64.2}"
+#   until $ssh_command echo; do printf .; sleep 1; done
+#   $ssh_commandu
+else utmctl start "$1"; fi
