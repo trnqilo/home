@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+if type diskutil &>/dev/null; then
+  diskutil erasevolume HFS+ shm `hdiutil attach -nomount ram://4194304`
+elif type imdisk &>/dev/null; then
+  imdisk -a -t vm -s "2G" -m R: -p "/FS:NTFS /V:RamDisk /Q /Y" -o rem
+else
+  mkdir -p "$HOME/.shm"
+  mount -t tmpfs -o size=2G tmpfs "$HOME/.shm"
+fi
