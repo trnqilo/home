@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+
+function _linux_wm_host {
+  local do="sudo su - $user -c"
+  local display="DISPLAY=$DISPLAY"
+  local args="SI:localuser:$user"
+  local block="xhost -$args"
+  local allow="xhost +$args"
+
+  if [[ "$2" ]] && $block && $allow; then shift
+    $do "$display $@" > /dev/null ||:
+  fi
+  $block
+}
+
+user="$1"
+if [[ "$2" =~ ^x(host)?$|^o(pen)?$ ]]; then shift
+  _${whereami}_wm_host "$@"
+elif [[ "$2" ]]; then shift
+  sudo su - "$user" -c "$@"
+else
+  sudo su - ${user:-root}
+fi

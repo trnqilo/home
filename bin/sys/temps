@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+if [[ "$1" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]; then watch -tcn "$1" "$0"; exit; fi
+(
+if type kldstat &>/dev/null && type sysctl &>/dev/null; then echo
+  kldstat | grep -q coretemp || sudo kldload coretemp
+  kldstat | grep -q amdtemp || sudo kldload amdtemp
+  sysctl -a | grep -i 'thermal\|temperature' | $awk '{print $2}'
+fi
+
+if type istats &>/dev/null; then istats | grep ': '; fi
+
+if type nvidia-smi &>/dev/null; then echo
+  nvidia-smi --query-gpu=gpu_name,temperature.gpu --format=csv | tail -1 \
+    | $awk -F, '{print $1":\t+"$2*1.0"°C"}' \
+    | $sed 's/NVIDIA //g;s/GeForce //g'
+fi
+
+if type sensors &>/dev/null; then echo; sensors;fi
+
+if type vcgencmd &>/dev/null; then echo
+  vcgencmd measure_temp | $sed "s/'/°/g;s/=/  /g"
+  vcgencmd get_throttled | $sed 's/throttled=/step  /g'
+  vcgencmd measure_volts | $sed 's/=/  /g'
+fi
+
+if [[ -d '/sys/class/thermal/thermal_zone0' ]]; then echo
+  paste \
+    <(cat /sys/class/thermal/thermal_zone*/type) \
+    <(cat /sys/class/thermal/thermal_zone*/temp) \
+    | $awk '{print $1"\t"int($2/1000)"°C"}' \
+    | column -s $'\t' -t
+fi
+
+) 2> /dev/null | $sed '/^$/N; /^\n$/D'

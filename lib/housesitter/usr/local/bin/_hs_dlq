@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+dlq=/dev/shm/hs/dlq
+
+# TODO revisit this
+function dlq_purge ( find "$1" -type f -mmin +720 -delete )
+dlq_purge $dlq
+
+mkdir -p $dlq
+while [[ "$1" ]]; do mv "$1" $dlq ||:; shift; done
