@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+
+while [[ "$1" ]]; do
+  [[ "$1" == *.* ]] && end= || end=.local
+  open "vnc://${1}${end}"
+  shift
+done
