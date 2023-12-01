@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+if type nvidia-smi &>/dev/null; then
+  nvidia-smi -q -d CLOCK | grep '  Clocks$' -A4 | grep -iE 'graphics|SM|Memory|Video' | \
+  while read clock; do printf "\n${clock/'                   :'/}"; done && echo
+fi

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if [[ "$1" =~ ^o(penai)?$ ]]; then shift; bot='chat.openai.com'
+elif [[ "$1" =~ ^c(laude)?$ ]]; then shift; bot='claude.ai/new'
+elif [[ "$1" =~ ^g(emini)?$ ]]; then shift; bot='gemini.google.com/app'
+elif [[ "$1" == 'x' ]]; then shift; bot='grok.com'
+elif [[ "$botagent" ]] && [[ ! "$1" || "$1" == 'resume' ]]; then $botagent $1; exit
+else bot='chat.openai.com'; fi
+query="$@" query="${query// /+}"
+open "https://${bot}?q=${query}"
