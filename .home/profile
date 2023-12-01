@@ -1,0 +1,200 @@
+if [[ -f "$HOME/.profo" ]]; then source "$HOME/.profo"; fi
+export DOTHOME="${DOTHOME:-$HOME/.home}" HOLO="${HOLO:-$HOME/.local/home}"
+export HOMELIB="${HOMELIB:-$HOME/Library}" PROJECTS="${PROJECTS:-$HOME/Projects}"
+export ANDROID_HOME="${ANDROID_HOME:-$HOMELIB/android/sdk}"
+export ANDROID_SDK_ROOT="$ANDROID_HOME" ANDROID_NDK_HOME="$ANDROID_HOME/ndk" ANDROID_NDK_ROOT="$ANDROID_HOME/ndk"
+export GOROOT="$HOMELIB/go" SWIFT_HOME="$HOMELIB/swift/usr" SDKMAN_DIR="$HOME/.sdkman"
+
+function include { while [[ "$1" ]]; do if [[ -d "$1" ]]; then export PATH="$1:$PATH"; fi; shift; done; }
+function import { while [[ "$1" ]]; do if [[ -s "$1" ]]; then source "$1"; fi; shift; done; }
+
+function _home_env_setup {
+  local OS="${OSTYPE:-`uname -s | awk '{print tolower($1)}'`}"
+  if [[ "$OS" == 'darwin'* ]]; then export whereami='darwin'
+  elif [[ "$OS" == 'freebsd'* ]]; then export whereami='freebsd'
+  elif [[ "$OS" == *'android'* ]]; then export whereami='android'
+  elif [[ "$OS" == 'openbsd'* ]]; then export whereami='openbsd'
+  elif [[ "$OS" == 'netbsd'* ]]; then export whereami='netbsd'
+  elif [[ "$OS" == 'msys'* || "$OS" == 'cygwin' ]]; then export whereami='windows'
+  elif [[ "$OS" == 'linux'* ]]; then export whereami='linux'
+  else export whereami='unknown'; fi
+
+  local BIN="$DOTHOME/bin"
+  local BIN_OS="$BIN/os/$whereami" BIN_DEV="$BIN/dev" BIN_SH="$BIN/shell"
+  export PATH="$BIN/home:$BIN/doc:$BIN/home/key:$BIN/calc:$BIN/net:$BIN/os:$BIN/sys:$PATH"
+  export PATH="$BIN_SH:$BIN_SH/file:$BIN_SH/string:$BIN_SH/run:$PATH"
+  export PATH="$BIN_DEV:$BIN/app:$BIN_OS:$PATH"
+
+  include \
+    "$HOLO/bin" "$HOME/.local/bin" \
+    "$HOME/.cargo/bin" "$HOME/.pub-cache/bin" "$SWIFT_HOME/bin" "$HOMELIB/flutter/bin" "$HOMELIB/code/bin" \
+    "$HOMELIB/dart-sdk/bin" "$HOMELIB/python" "$HOMELIB/kotlin-native/bin" "$GOROOT/bin" "$HOMELIB/zig" \
+    "$ANDROID_HOME/tools" "$ANDROID_HOME/tools/bin" "$ANDROID_HOME/platform-tools" \
+    "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin"
+
+  import "$DOTHOME/lib/profile" "$DOTHOME/play/profile" "$HOLO/profile" "$HOME/.local/profile" \
+    "$HOME/.cargo/env" "$SDKMAN_DIR/bin/sdkman-init.sh"
+
+  if [[ -d "$HOME/.local/profiles/" ]]; then import "$HOME/.local/profiles/"*; fi
+
+  function _shtyle_set { export PROMPT_ICON=${1:-'>:'} PROMPT_COLOR=${2:-'white'} PROMPT_ACCENT=${3:-'white'} PROMPT_BODY=${4:-'default'}; }
+  function shtyle { _shtyle_set $@; echo "$PROMPT_ICON" "$PROMPT_COLOR" "$PROMPT_ACCENT" "$PROMPT_BODY" > "$HOME/.shtyle"; }
+  if [[ ! -f "$HOME/.shtyle" ]]; then shtyle
+  else _shtyle_set `<"$HOME/.shtyle"`; fi
+}
+_home_env_setup; unset -f _home_env_setup
+
+function pro { [[ "$workspace" ]] || local workspace="$PROJECTS"
+  mkdir -p "$workspace" && cd "$workspace" || return 1
+  if [[ "$1" == 'clone' && "$2" ]]; then local repo="$2"; shift 2
+    git clone "$repo" $@ || return 1; repo="${repo##*/}"; repo="${repo//.git/}"
+    [[ -d "$repo" ]] && cd "$repo"
+  else
+    if [[ "$1" =~ ^[0-9a-zA-Z]+'/'[0-9a-zA-z]+$ ]]; then
+      local depth=2 proj="$($awk -F/ '{print $1".*/"$2".*"}'<<<"$1")"
+    else local depth=1 proj="$1"; fi
+    local target="`find . -maxdepth $depth -type d | grep "$proj" | head -1`"
+    if [[ ! -d "$target" ]]; then echo "$1 not found."; return 1; fi
+    cd "$target"; [[ "$2" ]] && shift && $@ .
+  fi
+}; alias prolib='workspace="$DOTHOME/projects" pro'
+
+function adbdev {
+  if [[ "$1" ]]; then local device="`adbb ls | grep -iE "$1" | head -1`"
+    if [[ "$device" ]]; then export ANDROID_SERIAL="$device"
+    else echo "no matching device: $1"; fi
+  fi
+  echo "ANDROID_SERIAL=$ANDROID_SERIAL"
+}
+
+function pyvenv { local env="${1:-.venv}"
+  if [[ ! -d "$env" ]]; then python3 -m venv "$env"; fi
+  source "$env/bin/activate"
+}
+
+function gci { local message="$@"; git commit -m "$message"; }
+function gp { git push origin HEAD $([[ "$1" == '-f' ]] && echo --force-with-lease --force-if-includes ||:) -u; }
+alias g='git' gs='git status' gsa='gs --ignored' gup='git pull --rebase' gcia='git add -A; gci' gco='git checkout'
+
+alias binsymbols='nm -gDC'
+alias fastbroot='sudo "$ANDROID_HOME/platform-tools/fastboot"'
+alias virtinit='pkg i virt-manager && sudo usermod -aG libvirt $USER'
+alias rad='./gradlew'
+alias mockitoinit='cd ./test && mkdir -p ./resources/mockito-extensions && echo 'mock-maker-inline' > ./resources/mockito-extensions/org.mockito.plugins.MockMaker'
+alias emu='adbb emu'
+alias json='python3 -m json.tool'
+alias jsonprint='json | bat --language javascript'
+
+alias rustupup="curl --proto '=https' --tlsv1.2 -sSf 'https://sh.rustup.rs' | sh;"
+alias sdkmanup='curl -s "https://get.sdkman.io" | bash;'
+
+alias nvmup='curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash;'
+if [[ -d "$HOME/.nvm" ]]; then
+  export NVM_DIR="$HOME/.nvm"
+  [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+  [[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
+fi
+export NODE_PATH="`type npm &>/dev/null && npm root -g ||:`"
+
+alias pythonup='curl -fsSL https://pyenv.run | bash'
+if [[ -d "$HOME/.pyenv" ]]; then
+  export PYENV_ROOT="$HOME/.pyenv"
+  include "$PYENV_ROOT/bin"
+  eval "$(pyenv init - bash)"
+  eval "$(pyenv virtualenv-init -)"
+fi
+
+alias flutterup='surely "install flutter ${flutter_version:-stable}" && cd && \
+  rm -fr .pub-cache .flutter .flutter-devtools .dart .dartServer "$HOMELIB/flutter" && \
+  cd "$HOMELIB" && git clone https://github.com/flutter/flutter.git && cd flutter && \
+  git checkout "${flutter_version:-stable}" && bin/flutter doctor'
+alias fpg='flutter pub get;'
+alias fpup='flutter pub upgrade;'
+alias ftest='flutter test;'
+
+alias mul='clac mul' add='clac add' sub='clac sub' div='clac div' avg='clac avg'
+
+if [[ "$whereami" == 'android' ]]; then
+  export packages='build-essential python3 nodejs openjdk-21 which openssh zip screen bat rsync proot-distro'
+elif [[ "$whereami" == 'darwin' ]]; then
+  export packages='bash zsh coreutils gnu-sed watch bash-completion zsh-completion gpg qemu bat lolcat openssl screen'
+  export packages_apps='visual-studio-code iterm2 slack discord qmk/qmk/qmk homebrew/cask-drivers/qmk-toolbox jetbrains-toolbox utm'
+  alias app='open -a'
+  alias disk_unlock_by_uuid='diskutil apfs unlockVolume'
+  alias fmy='open /System/Applications/FindMy.app;'
+  alias imsg='open /System/Applications/Messages.app;'
+  alias qmkt='app "QMK Toolbox";'
+  alias slk='app Slack;'
+  alias simulatorwipe='fastlane snapshot reset_simulators;'
+  alias screensave='app ScreenSaverEngine.app;'
+  alias xcodeinit='sudo xcode-select -s /Applications/Xcode.app/Contents/Developer'
+  alias ip='ipcmd=ifconfig ipcmd'
+  alias rdp='app "Microsoft Remote Desktop";'
+  alias filevaultrm='surely "remove user from filevault" && sudo fdesetup remove -user'
+  alias smc='sudo powermetrics --samplers smc'
+  alias rosetta_install='softwareupdate --install-rosetta'
+  include /opt/homebrew/bin \
+    /opt/homebrew/opt/coreutils/libexec/gnubin \
+    /usr/local/opt/coreutils/libexec/gnubin \
+    /opt/homebrew/opt/gnu-sed/libexec/gnubin \
+    /opt/homebrew/opt/grep/libexec/gnubin \
+    /Applications/Docker.app/Contents/Resources/bin
+elif [[ "$whereami" == 'freebsd' ]]; then
+  export packages='xorg xrdp xfce gnu-watch sudo coreutils date screen'
+  alias ip='ipcmd=ifconfig ipcmd'
+elif [[ "$whereami" == 'linux' ]]; then
+  export packages='bash zsh build-essential gpg cmus iftop bat lolcat screen'
+  export packages_apps='qemu qemu-kvm ioquake3-server steam-installer lm-sensors blender gimp xfce4 blackbox blackbox-themes xterm'
+elif [[ "$whereami" == 'windows' ]]; then
+  export packages='rsync gcc procps-ng diffutils unzip zip mingw-w64-ucrt-x86_64-bat'
+  export psh_history="$APPDATA/Microsoft/Windows/PowerShell/PSReadLine/ConsoleHost_history.txt"
+  alias slk='secretly "$LOCALAPPDATA/slack/slack.exe"'
+  alias winvars='rundll32 sysdm.cpl,EditEnvironmentVariables'
+  alias hypervset='bcdedit -set hypervisorlaunchtype' # auto
+  alias ip='ipcmd="ipconfig.exe -all" ipcmd'
+  export PATH="/usr/bin:$PATH"
+fi
+
+function chhome { local HOME="`realpath "$@"`"; if [[ -d "$HOME" ]]; then cd "$HOME" && exec "$SHELL"; fi; }
+
+function why {
+  if [[ "$2" == 'fun' ]]; then
+    why "$1" | grep '^function ' | $awk '{print $2}'; return
+  elif [[ "$1" ]]; then local _command_="`command -v "$1" 2> /dev/null`"
+  else return; fi
+  if type bat &>/dev/null; then bat='bat'; else bat='cat'; fi
+  if [[ "$_command_" == "$1" ]]; then echo -e "#!$SHELL\n## `type "$_command_"`" | $bat
+  elif is binary "$_command_"; then echo "$1 is a binary: $_command_" | $bat
+  elif is file "$_command_"; then echo -e "`$bat "$_command_"`\n\n##$_command_" | $bat
+  elif ! is empty "$_command_"; then echo -e "#!$SHELL\n$_command_" | $bat
+  else echo "$1 not found" | $bat; fi
+}
+
+# function vdi2img { VBoxManage clonehd "$1" "${1/.vdi/.img}" --format RAW; }
+
+if [[ ! -f "$HOME/.vimrc" ]]; then cp "$DOTHOME/conf/vimrc" "$HOME/.vimrc"; fi
+
+if (type batcat && ! type bat)&>/dev/null; then
+  bash -c 'mkdir -p "$HOME/.local/bin" && ln -s "`type -p batcat`" "$HOME/.local/bin/bat"'
+fi
+
+alias qq='exit'
+alias hide='clear; PROMPT="" PS1=""'
+alias iddqd='sudo su -'
+alias iommus='for device in /sys/kernel/iommu_groups/*/devices/*; do group=${device#*/iommu_groups/*}; echo "group ${group%%/*} `lspci -nns ${device##*/}`"; done | gg "Group [[:digit:]]|Group [[:digit:]][[:digit:]]"'
+alias stresstest='stress -c "${cores:-"4"}" -i "${io:-"1"}" -m "${memory:-"1"}" -t "${time:-"60"}"'
+
+export awk="${awk:-gawk}"; if ! type "$awk" &>/dev/null; then awk='awk'; fi
+export GREP_COLORS="ms=`ansi_esc=none ansicode bright,$PROMPT_COLOR`"
+export BAT_STYLE='grid,numbers' BAT_PAGER=''
+export GPG_TTY="`tty`"
+export EDITOR='vim'
+
+alias up='if type homeup &>/dev/null; then homeup; else homesync; fi;'
+alias home='edi "$DOTHOME";'
+alias holo='mkdir -p "$HOLO" && edi "$HOLO";'
+alias lopro='mkdir -p "$HOME/.local" && edi "$HOME/.local/profile";'
+alias ssh-keygen-ed='ssh-keygen -t ed25519'
+alias ssh-keygen-rsa='ssh-keygen -t rsa'
+alias ssh-regen='ssh-keygen -y -f'
+alias passgen='openssl passwd' # -1
