@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+
+if [[ "$1" =~ ^x(host)?$ && "$2" ]]; then shift
+  _do="sudo su - $1 -c"
+  _display="DISPLAY=$DISPLAY"
+  _args="SI:localuser:$1"
+  _block="xhost -$_args"
+  _allow="xhost +$_args"
+  if [[ "$2" ]] && $_block && $_allow; then shift
+    $_do "$_display $@" > /dev/null ||:
+  else
+    $_do "$_display bash -l" ||:
+  fi
+  $_block
+elif [[ "$1" == -c ]]; then
+  exec sudo su - root "$@"
+else
+  exec sudo su - "$@"
+fi
