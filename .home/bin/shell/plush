@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+if [[ "$1" == '+' ]]; then shift; until false; do if read -rep "+ " input; then $@ $input; else break; fi; done
+elif [[ "$1" == '\' ]]; then while :; do if read -rep $'\e[35mC:'$(pwd|sed 's/\//\\/g')$'>\e[0m ' input; then input=${input/'C:\'/'/'}; ${input//'\'/'/'}; else break; fi; done
+else [[ -f "$HOME/.plushrc" ]] && . "$HOME/.plushrc"; function prompt { if read -rep $'\e[35m+\e[0m ' input; then $input; else echo exit;exit; fi }; function prompt_msg { [[ $BASH_VERSINFO > 4 ]] || return; gbr=`git branch --show-current 2> /dev/null` && [[ $gbr ]] && gbr=" ($gbr)";echo -e "\e[0;35m`whoami` plush \e[0;36m`hostname` `date +%T` \e[0m`pwd`\e[0;35m$gbr" ; }; function plush { while true; do prompt_msg; prompt; done } && plush; fi

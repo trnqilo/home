@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -e
+
+cd
+
+mv .git.home .git &>/dev/null ||:
+mv .home/readme . &>/dev/null ||:
+mv .home/license . &>/dev/null ||:
+
+if git fetch &>/dev/null; then
+  branch="`git rev-parse --abbrev-ref HEAD`"
+  git diff origin/$branch --name-status | parrot magenta
+  git reset --hard origin/$branch ||:
+fi
+
+mv .git .git.home
+mv readme .home/ &>/dev/null ||:
+mv license .home/ &>/dev/null ||:
+
+if cd "$HOLO/.git/.." &>/dev/null && ! test -z "`git remote -v`"; then
+    git count-objects; git fetch
+else exit; fi
+
+if [[ "$HOLORO" ]]; then git reset --hard origin/main
+else
+  git diff origin/main --name-status | parrot magenta; git pull origin main
+  if ! git status | grep "nothing to commit"; then
+    git add -A
+    if [[ "$HOLOSQUASH" == true ]]; then
+      git commit --amend -C HEAD
+      forces='--force-with-lease --force-if-includes'
+    else
+      git commit -m"`date`"
+    fi
+  fi
+fi
+git push origin main $forces -u
+git gc && git count-objects
