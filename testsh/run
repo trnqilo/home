@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+function setup {
+  source "$HOMETEST/expect"
+  source "$HOMETEST/when"
+  # source "$HOMETEST/verify"
+  date_command="`type date | $awk '{print $3}'`"
+  [[ "$failures" ]] && return || failures=0
+  [[ "$runs" ]] || runs=0
+  [[ "$time" ]] || time=`"$date_command" +%s`
+  [[ "$codegen" ]] && printf '' > "$HOME/codegen.sh"
+}; export -f setup
+
+function finish {
+  local now=`"$date_command" +%s`
+  let time=now-time
+  message=`parrot cyan $runs total $time sec`
+  let runs-=failures
+  if ((runs != 0)); then message="`parrot cyan $runs passed` $message"; fi
+  if ((failures != 0)); then message="`parrot magenta $failures failed` $message"; fi
+  echo -e "$message"
+}; export -f finish
+
+function run {
+  testfiles=`find "$DOTHOME/bin" -type f -name \*'_tests' | grep "$1"`
+  [[ "$testfiles" ]] \
+    && echo "setup;`cat $testfiles \
+    | grep -v 'set -e\|/usr/bin/env bash\|. \$HOMETEST/'`;finish" \
+    | bash 2> /dev/null
+}
+
+run "$1"
