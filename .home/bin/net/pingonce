@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+function pingonce {
+  if whereami windows; then ping -w 1 -n 1 $1
+  else ping -W 1 -c 1 $1; fi | $awk '{print $3}' \
+    | head -1 | sed 's/(//g;s/)//g;s/://g'
+}
+
+if [[ "$1" == '-q' ]]; then quiet=true; shift; fi
+
+ping=`pingonce $1 2>/dev/null ||:`
+
+if [[ ! "$ping" ]]; then exit 1
+elif [[ ! "$quiet" ]]; then echo $ping; fi

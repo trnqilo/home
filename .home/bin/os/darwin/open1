@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+while [[ "$1" == '-'* ]]; do args+="$1 "; shift; done; target="$@"
+/usr/bin/open $args "$target" 2> /dev/null
