@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -e
+
+export MSYS2_ARG_CONV_EXCL='*'
+export MSYS_NO_PATHCONV=1
+
+reg add "HKCU\Control Panel\Colors" /v Background /t REG_SZ /d "0 0 0" /f
+reg add "HKCU\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9012038010000000 /f
+reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "" /f
+reg add "HKCU\Control Panel\Desktop" /v WallpaperStyle /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Desktop" /v TileWallpaper /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v MinAnimate /t REG_SZ /d "0" /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideIcons /t REG_DWORD /d 1 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAl /t REG_DWORD /d 1 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAnimations /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\DWM" /v Animations /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
+reg add "HKCU\Control Panel\Mouse" /v MouseHoverTime /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Mouse" /v MouseSpeed /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Mouse" /v MouseThreshold1 /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Mouse" /v MouseThreshold2 /t REG_SZ /d "0" /f
+reg add "HKCU\Control Panel\Mouse" /v MouseSensitivity /t REG_SZ /d "6" /f
+# reg add "HKCU\Control Panel\Mouse" /v MouseSensitivity /t REG_SZ /d 10 /f
+
+
+if [[ "$stuckrects" == true ]]; then
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects2" /v Settings /t REG_BINARY /d 3000000000000000FEFFFFFF020000003E0000003E0000000000000000000000 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3" /v Settings /t REG_BINARY /d 3000000000000000FEFFFFFF020000003E0000003E0000000000000000000000 /f
+fi
+
+echo $'BoldAsFont=-1\nFontHeight=13\nFontSmoothing=full\nCursorType=block\nCursorBlinks=no\nClipShortcuts=no\nAltFnShortcuts=no\nCtrlShiftShortcuts=yes\nColumns=130\nRows=40\nFontWeight=700\nFontIsBold=yes\nFont=Consolas\nTransparency=low\nThemeFile=mintty\nBackgroundColour=0,0,0\nForegroundColour=175,175,175\nCursorColour=122,122,122\nBlack=0,0,0\nBoldBlack=38,38,38\nRed=184,153,122\nBoldRed=220,204,188\nGreen=122,184,153\nBoldGreen=188,220,204\nYellow=153,184,122\nBoldYellow=204,220,188\nBlue=153,122,184\nBoldBlue=204,188,220\nMagenta=184,122,153\nBoldMagenta=220,188,204\nCyan=122,153,184\nBoldCyan=188,204,220\nWhite=217,217,217\nBoldWhite=255,255,255\nOpaqueWhenFocused=no\nScrollbar=none\nBellType=0\nBellTaskbar=no' > "$HOME/.minttyrc"
+
+surely log out && shutdown.exe /l
+# rundll32 user32.dll,UpdatePerUserSystemParameters 1 true
+# taskkill /f /im explorer.exe
+# cmd /c start "" explorer.exe
