@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -e
+
+export awk=${awk:-gawk} sed=${sed:-sed}
+
+function _masqs_block {
+  if [[ "$1" == 'fetch' ]]; then shift
+    local hosts=( $@ 'https://winhelp2002.mvps.org/hosts.txt' )
+    curl -s ${hosts[*]} \
+      | grep '^0\.0\.0\.0' | grep -o '^[^#]*' \
+      | $awk '{print "0.0.0.0 "$2}' | $sed -e 's/\r/\n/g' \
+      | sort | uniq | grep -v '^$'
+  else
+    base64 -d "$DOTHOME/lib/masqs/conf/blockhosts"
+  fi
+}
+
+function _masqs_denied {
+  grep ': DHCPDISCOVER' /var/log/syslog | grep -iE 'no address' # grep -iE 'no address' /var/log/syslog | gawk '{print $7}' | grep '.*:.*:' | sort | uniq | gawk '{print "dhcp-host="$1",ignore"}'
+}
+
+function _masqs_init {
+  file='/etc/dnsmasq.d/masqs.net'
+  if [[ -f "$file" ]]; then echo masqs setup already; return; fi
+  sudo mkdir -p /etc/masqs
+  sudo touch /etc/masqs/hosts /etc/masqs/hosts.blocklist /etc/masqs/hosts.guests
+  sudo cp "`dirname $0`/conf/masqs.net" /etc/dnsmasq.d/masqs.net
+  sudo vim $file
+}
+
+function _masqs_add { iface="$1" subnet="$2"
+  if [[ ! "$subnet" ]]; then echo 'add [interface] [subnet]'; return; fi
+  file="/etc/dnsmasq.d/masqs.net.${iface}"
+  if [[ -f "$file" ]]; then echo ${iface} setup already; return; fi
+
+}
+
+function _masqs_aps {
+  [[ "$1" ]] && aps='mux' || exit
+  while [[ "$1" ]]; do
+    aps+=" 'forev clear sudo hostapd /etc/hostapd/${1}'"; shift
+  done
+  bash -c "$aps"
+}
+
+function _masqs_ap {
+  [[ "$1" ]] && screens detach sudo hostapd /etc/hostapd/${1}* ||:
+}
+
+function _masqs_fw {
+  wan="${wan:-`ip route | grep default | $awk '{print $5}'`}"
+  _masqs_guests | while read guest; do
+    $awk '{print "# "$3}' <<< "$guest"
+    if [[ "$guest" == *'.lo' ]]; then printf '# '; fi
+    $awk '{print "-A POSTROUTING -s "$1" -o "$4" -j MASQUERADE"}' <<< "$guest $wan"
+  done
+}
+
+function _masqs_hosts {
+  _masqs_guests | while read guest; do
+    $awk '{print tolower($1" "$3".box")}' <<< "$guest"
+  done
+}
+
+function _masqs_guests {
+  if [[ "$1" == 'print' ]]; then
+    _masqs_guests | $awk '{print "dhcp-host="$2","$1","$3}'
+  else
+    cat /etc/dnsmasq.d/masqs.guests | grep '^dhcp-host=' \
+      | $awk -F, '{print $2" "$1" "$3}' | $sed 's/dhcp-host=//g' \
+      | sort -V | column -s $' ' -t
+  fi
+}
+
+function _masqs_rez { fw r; serv r dnsmasq; }
+
+function _masqs_status { fw; serv s dnsmasq; }
+
+function _masqs_leases { cat /var/lib/misc/dnsmasq.leases; }
+
+function write_before_rules {
+  rules_file='/etc/ufw/before.rules'
+  test -f "${rules_file}.bak" || sudo cp "$rules_file" "${rules_file}.bak"
+  masqs_rules=$(cat)
+  header=$(awk '/^#/ {print} !/^#/ {exit}' "$rules_file")
+  default_rules=$(awk '!/^#/ {found=1} found {print}' "$rules_file")
+  {
+      echo "$header"
+      echo "$masqs_rules"
+      echo "$default_rules"
+  }
+  parrot mag '| sudo tee "$rules_file" > /dev/null'
+}
+
+# function next_id { ids=({2..254}); for id in "${ids[@]}"; do if ! grep -q "^$id " "$config"; then echo "$id"; break; fi; done; }
+# function format_mac { addr="$@"; for ((i=0; i<${#addr}; ++i)); do printf "${addr:$i:1}"; if (( i % 2 > 0 )) && (( i < ${#addr}-1 )); then printf ':'; fi; done; }
+
+if [[ "$1" == '/'* ]]; then "$@"
+elif [[ "$1" ]]; then _masqs_$@
+else echo functions: `grep '^function _masqs_' $0 | $awk '{print $2}' | $sed 's/_masqs_//g'`; fi
