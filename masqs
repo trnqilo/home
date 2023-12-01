@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+set -e
+
+export awk=${awk:-gawk} sed=${sed:-sed} sudo=${sudo:-sudo} packages='dnsmasq wakeonlan'
+export masqs_etc="`dirname $0`/etc" leases='/var/lib/misc/dnsmasq.leases'
+
+function _masqs_base { cat "${masqs_etc}/dnsmasq.d/masqs"; }
+
+function _masqs_net { subnet="$1" interface="$2" static="$3"
+  if [[ ! "$interface" ]]; then message 'net [subnet] [interface] dynamic|static'
+  elif [[ "$static" == 'static' ]]; then echo -e "interface=$interface\ndhcp-range=192.168.${subnet}.0,static,255.255.255.0,0m"
+  else echo -e "interface=$interface\ndhcp-range=192.168.${subnet}.2,192.168.${subnet}.254,72h"; fi
+}
+
+function _masqs_guest { subnet="$1" name="$2" mac="$3" address="$4"
+  if [[ ! "$address" ]]; then message 'guest [subnet] [name] [mac] [address]'; exit
+  else echo "dhcp-host=${mac},192.168.${subnet}.${address},${name}"; fi
+}
+
+function _masqs_ignore { mac="$1"
+  if [[ ! "$mac" ]]; then message 'ignore [mac]'; exit
+  else echo "dhcp-host=${mac},ignore"; fi
+}
+
+function _masqs_write {
+  if [[ "$1" == 'base' ]]; then _masqs_base | write_system_file /etc/dnsmasq.d/masqs
+  elif [[ "$1" == 'net' ]]; then _masqs_"$@" | clobber=false write_system_file /etc/dnsmasq.d/masqs.${conf:-$2}
+  elif [[ "$1" == 'guest' ]]; then _masqs_"$@" | append_system_file /etc/dnsmasq.d/masqs.${conf:-$2}
+  elif [[ "$1" == 'ignore' ]]; then _masqs_"$@" | append_system_file /etc/dnsmasq.d/masqsignore; fi
+}
+
+function _masqs_edit { local conf='masqs'
+  if [[ "$1" ]]; then conf+=".${1}"; fi
+  $sudo vim "/etc/dnsmasq.d/${conf}"
+}
+
+function _masqs_nics { local direction="$1"; shift
+  if [[ ! "$direction" ]]; then message 'interface up|down [conf]'; return; fi
+  while [[ "$1" ]]; do conf="$1"; shift
+    grep 'interface=' "/etc/dnsmasq.d/masqs.${conf}" | $sed 's/interface=//g' \
+      | if read interface; then
+          $sudo ip link set $interface $direction \
+            && echo "${interface} ${direction}" \
+            || echo "${interface} ${direction} failed"
+        fi
+  done
+}
+
+function _masqs_blocklist {
+  if [[ "$1" == 'fetch' ]]; then shift
+    local hosts=( $@ 'https://winhelp2002.mvps.org/hosts.txt' )
+    curl -s ${hosts[*]} \
+      | grep '^0\.0\.0\.0' | grep -o '^[^#]*' \
+      | $awk '{print "0.0.0.0 "$2}' | $sed -e 's/\r/\n/g' \
+      | sort | uniq | grep -v '^$'
+  else
+    base64 -d "${masqs_etc}/masqs/blockhosts"
+  fi
+}
+
+function _masqs_strangers { grep -E 'no address available' /var/log/syslog | filter_mac_addresses | sort | uniq; }
+
+function _masqs_ap { interface="$1" ssid="$2" mode=${3:-g};
+  if [[ ! "$password" ]]; then read -resp 'password: ' password; fi
+  cat "${masqs_etc}/hostapd/hostapd_${mode}" | sed "s/INTERFACE/$interface/g;s/SSID/$ssid/g;s/PASSWORD/$password/g"
+}
+
+function _masqs_aps {
+  [[ "$1" ]] && aps='mux' || exit
+  while [[ "$1" ]]; do
+    aps+=" 'forev clear $sudo hostapd /etc/hostapd/${1}'"; shift
+  done
+  bash -c "$aps"
+}
+
+function _masqs_fw {
+  echo -e '*nat\n:PREROUTING ACCEPT [0:0]\n:POSTROUTING ACCEPT [0:0]\n-F'
+  _masqs_guests | while read guest; do
+    $awk '{print "# "$3" "$2}' <<< "$guest"
+    if [[ "$guest" == *'_lan' ]]; then printf '# '; fi
+    $awk '{print "-A POSTROUTING -s "$1" -o "$4" -j MASQUERADE"}' <<< "$guest `wan_interface`"
+  done
+  echo 'COMMIT'
+  cat "${masqs_etc}/ufw/before.rules"
+  # if [[ -f "$HOME/fw" ]]; then cat "$HOME/fw"; fi
+}
+
+function _masqs_hosts {
+  _masqs_guests | $sed 's/.0\/24/.1/g;s/_lan//g' | while read guest; do
+    $awk '{print tolower($1" "$3".box")}' <<< "$guest"
+  done
+}
+
+function _masqs_wake {
+  while [[ "$1" ]]; do
+    _masqs_guests | grep " ${1}$" | if read ip mac guest; then echo waking $guest; wakeonlan -i "${ip%.*}.255" $mac ||:; fi
+    shift
+  done
+}
+
+function _masqs_guests {
+  if [[ "$1" ]]; then _masqs_guests | grep "$1"; return; fi
+  cat /etc/dnsmasq.d/masqs.* | ( masqs="`cat`"
+  if [[ "$show_wan" == true ]]; then
+    ip -4 addr show dev `wan_interface` | grep -oP '(?<=inet\s)\d+(\.\d+){3}' \
+      | $awk "{print \$1\" 00:00:00:00:00:00 ${HOSTNAME}\"}"
+  fi
+  # | $awk "{split(\$2, ip, \".\"); print \$2\" 00:00:00:00:00:00 ${HOSTNAME}\"ip[3]\$4}"
+  echo "$masqs" | grep '^dhcp-range=' \
+    | $sed 's/static,//g;s/=/ /g;s/,/ /g;s/72h//g;s/0m/_lan/g;s/.[0-9]\+ /.0\/24 /g' \
+    | $awk "{print \$2\" 00:00:00:00:00:00 ${HOSTNAME}\"\$4}"
+  echo "$masqs" | grep '^dhcp-host=' \
+    | $awk -F, '{print $2" "$1" "$3}' | $sed 's/dhcp-host=//g' \
+    | sort -V
+  ) | column -s $' ' -t
+}
+
+function _masqs_netplan { echo -e 'network:\n  version: 2\n  ethernets:'
+  cat /etc/dnsmasq.d/masqs.* | grep 'interface\|range' | xargs \
+    | $sed 's/interface=/\n/g;s/,/ /g;s/dhcp-range=//g' \
+    | $awk '{print $1" "$2}' \
+    | while read interface ip; do
+        if [[ ! "$ip" ]]; then continue; fi
+        echo -e "    $interface:\n      addresses:\n      - ${ip%.*}.1/24"
+        echo -e '      dhcp4: false\n      optional: true'
+        # echo -e '      nameservers:\n        addresses:\n        - 1.1.1.1'
+      done
+}
+
+function _masqs_apply {
+  if [[ -f '/etc/dnsmasq.d/masqs' ]]; then local conf=
+    for conf in packages system netplan hosts fw; do apply_$conf; done
+    _masqs_rez
+  else echo 'no masqs'; fi
+}
+
+function _masqs_backup { target="$HOME/.masqs/etc-`date +%s`"
+  mkdir -p "${target}/default" "${target}/ufw"
+  if [[ -d '/etc/dnsmasq.d' ]]; then $sudo cp -r /etc/dnsmasq.d "${target}/dnsmasq.d"; fi
+  if [[ -d '/etc/netplan' ]]; then $sudo cp -r /etc/netplan "${target}/netplan"; fi
+  if [[ -d '/etc/masqs' ]]; then $sudo cp -r /etc/masqs "${target}/masqs"; fi
+  if [[ -f '/etc/ufw/before.rules' ]]; then $sudo cp /etc/ufw/before.rules "${target}/ufw/before.rules"; fi
+  if [[ -f '/etc/default/ufw' ]]; then $sudo cp /etc/default/ufw "${target}/default/ufw"; fi
+}
+
+function _masqs_rez { $sudo ufw reload; servicer restart dnsmasq; _masqs_leases rez; _masqs_status; }
+
+function _masqs_status { $sudo ufw status numbered; servicer status dnsmasq; }
+
+function _masqs_leases { cat "$leases" ||:
+  if [[ "$1" == 'rez' ]]; then echo 'revoking leases...'
+    $sudo rm -vf "$leases"; $sudo touch "$leases"; _masqs_leases
+  fi
+}
+
+function apply_hosts {
+  _masqs_hosts | write_system_file /etc/masqs/hosts
+  _masqs_blocklist | write_system_file /etc/masqs/hosts.block
+}
+
+function apply_netplan {
+  _masqs_netplan | mod=600 write_system_file /etc/netplan/masqs.yaml
+  $sudo netplan generate && $sudo netplan apply
+}
+
+function apply_fw {
+  if $sudo grep -qE '^[[:space:]]*#?[[:space:]]*IPV6=' '/etc/default/ufw'; then
+    $sudo $sed -i 's|^[[:space:]]*#\?[[:space:]]*IPV6=.*|IPV6=no|' '/etc/default/ufw'
+  fi
+  $sudo ufw --force enable
+  $sudo ufw default deny incoming
+  $sudo ufw default allow outgoing
+  $sudo ufw default allow forward
+  $sudo ufw deny in on `wan_interface`
+  cat /etc/dnsmasq.d/masqs.* | grep 'interface=' | $sed 's/interface=//g' | \
+    while read interface; do $sudo ufw allow in on $interface; done
+  _masqs_fw | mod=600 backup=original write_system_file /etc/ufw/before.rules
+}
+
+function apply_system {
+  (servicer stop systemd-resolved && servicer disable systemd-resolved && servicer mask systemd-resolved ||:)&>/dev/null
+  append_system_file /etc/sysctl.conf <<< 'net.ipv4.ip_forward=1'
+  $sudo sysctl -p > /dev/null
+}
+
+function apply_packages { type $packages || $sudo apt-get install $packages -y; }
+
+function write_system_file { local filedata="`cat`" filename="$1"
+  if [[ ! "$filedata" ]]; then echo "nothing to write: $filename"; return
+  elif [[ "$clobber" == false && -f "$filename" ]]; then echo "file exists: ${filename}"; return
+  elif [[ "$backup" && ! -f "${filename}.${backup}" && -f "$filename" ]]; then $sudo cp "$filename" "${filename}.${backup}"; fi
+  if ! $sudo diff <(echo "$filedata") "$filename" &>/dev/null; then
+    $sudo mkdir -p "`dirname "$filename"`"
+    temp_filename="/dev/shm/`basename $filename`"
+    echo "$filedata" > "$temp_filename"
+    $sudo chown root:root "$temp_filename"
+    $sudo mv "$temp_filename" "$filename"
+    if [[ "$mod" ]]; then $sudo su -c "chmod $mod \"$filename\""; fi
+  else message "file unchanged: ${filename}"; fi
+}
+
+function append_system_file { local filename="$1"
+  while read linedata; do
+    if ! $sudo grep -Fxq "$linedata" "$filename"; then
+      $sudo su -c "echo $linedata >> $filename"
+      $sudo grep -Fx "$linedata" "$filename" || echo "error: $linedata" | message
+    else message "already exists: $linedata"; fi
+  done
+}
+
+function wan_interface { ip route | grep default | $awk '{print $5}'; }
+
+function message { if [[ "$1" ]]; then echo "$@" >&2; else cat >&2; fi; }
+
+function filter_mac_addresses { grep -Eo '([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}'; }
+
+function servicer { echo "`$sudo systemctl "$@"`"; }
+
+if [[ "$1" == '/'* ]]; then "$@"
+elif [[ "$1" ]]; then _masqs_$@
+else echo functions: `grep '^function _masqs_' $0 | $awk '{print $2}' | $sed 's/_masqs_//g' | sort`; fi
