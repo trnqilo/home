@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# automate.sh — plan / implement / review
+#
+# Usage:
+#   ./automate.sh plan    <ticket> [context-dir]
+#   ./automate.sh impl    <ticket> [context-dir]
+#   ./automate.sh review  <ticket> [context-dir]
+#   ./automate.sh all     <ticket> [context-dir]
+#
+# Env vars:
+#   AGENT_TOOL=claude|codex   (default: claude)
+#   AGENT_CTX=<dir>           (default: .agent-ctx)
+
+set -euo pipefail
+
+TOOL="${AGENT_TOOL:-claude}"
+CTX="${AGENT_CTX:-.agent-ctx}"
+TICKET="${2:-}"
+[[ -n "${3:-}" ]] && CTX="$3"
+
+# ── AI abstraction ────────────────────────────────────────────────────────────
+# run_ai <sandbox> <prompt>
+#   sandbox: readonly | write
+run_ai() {
+  local sandbox="$1" prompt="$2"
+  case "$TOOL" in
+    claude)
+      case "$sandbox" in
+        readonly) claude -p --system "Read and analyse only. Do not write or delete files." "$prompt" ;;
+        write)    claude -p --dangerously-skip-permissions "$prompt" ;;
+      esac
+      ;;
+    codex)
+      case "$sandbox" in
+        readonly) codex exec --sandbox read-only  --ephemeral "$prompt" ;;
+        write)    codex exec --sandbox workspace-write --ephemeral "$prompt" ;;
+      esac
+      ;;
+    *) echo "Unknown AGENT_TOOL: $TOOL" >&2; exit 1 ;;
+  esac
+}
+
+# ── Context helpers ───────────────────────────────────────────────────────────
+_load_ticket() {
+  if   [[ -f "$TICKET" ]];  then cat "$TICKET"
+  elif [[ -d "$TICKET" ]];  then cat "$TICKET"/*.md
+  else echo "$TICKET"   # treat raw string as inline ticket text
+  fi
+}
+
+_git() { git rev-parse --git-dir &>/dev/null && "$@" 2>/dev/null || true; }
+
+# ── Phases ────────────────────────────────────────────────────────────────────
+plan() {
+  mkdir -p "$CTX"
+  run_ai readonly "$(cat <<PROMPT
+You are a senior engineer producing an implementation plan.
+
+## Ticket
+$(_load_ticket)
+
+## Recent commits
+$(_git git log --oneline -10)
+
+## Current diff
+$(_git git diff main...)
+
+## Instructions
+Output ONLY a JSON object — no fences, no commentary — matching this schema:
+{
+  "summary": "<one sentence>",
+  "risk": "low|medium|high",
+  "steps": [
+    { "id": <int>, "intent": "<what>", "files": ["<path>"], "test_cmd": "<cmd or null>" }
+  ]
+}
+PROMPT
+)" > "$CTX/plan.json"
+}
+
+implement() {
+  [[ -f "$CTX/plan.json" ]] || { echo "No plan.json in $CTX — run plan first." >&2; exit 1; }
+  local n; n=$(jq '.steps | length' "$CTX/plan.json")
+  for i in $(seq 0 $((n - 1))); do
+    local step; step=$(jq -c ".steps[$i]" "$CTX/plan.json")
+    local test_cmd; test_cmd=$(echo "$step" | jq -r '.test_cmd // empty')
+    run_ai write "$(cat <<PROMPT
+Implement this step exactly. Do not change anything outside its scope.
+
+## Step
+$stepo
+
+## Plan (context only)
+$(cat "$CTX/plan.json")
+
+## Ticket
+$(_load_ticket)
+
+## Diff so far
+$(_git git diff)
+PROMPT
+)" > "$CTX/step-$(echo "$step" | jq -r '.id').log"
+    [[ -n "$test_cmd" ]] && eval "$test_cmd"
+  done
+  _git git diff > "$CTX/final.patch"
+}
+
+review() {
+  local diff
+  diff=$(cat "$CTX/final.patch" 2>/dev/null || _git git diff main... || true)
+  run_ai readonly "$(cat <<PROMPT
+You are a senior engineer doing a pre-merge code review.
+
+## Ticket
+$(_load_ticket)
+
+## Plan
+$(cat "$CTX/plan.json" 2>/dev/null || echo "(none)")
+
+## Diff
+$diff
+
+## Output
+Write a markdown report covering: correctness, scope, test coverage, risk.
+End with a line: Verdict: PASS | PASS_WITH_NOTES | FAIL
+PROMPT
+)" > "$CTX/review.md"
+  cat "$CTX/review.md"
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+case "${1:-}" in
+  plan)    plan ;;
+  impl)    implement ;;
+  review)  review ;;
+  all)     plan; implement; review ;;
+  *)       sed -n '3,9p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac
