@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+  if [[ ! "$1" ]]; then exit
+elif [[ "$1" == 'mus' ]]; then app=music
+elif [[ "$1" == 'dis' ]]; then app=discord
+elif [[ "$1" =~ ^disks?$ ]]; then app=disk\ utility
+elif [[ "$1" =~ ^docks?$ ]]; then app=docker\ desktop
+elif [[ "$1" == 'ff' ]]; then app=firefox
+elif [[ "$1" == 'goo' ]]; then app=google\ chrome
+elif [[ "$1" == 'ie6' ]]; then app=microsoft\ edge
+elif [[ "$1" == 'keys' ]]; then app=keychain\ access
+elif [[ "$1" == 'mon' ]]; then app=activity\ monitor
+elif [[ "$1" == 'prefs' ]]; then app=system\ settings
+elif [[ "$1" == 'rdp' ]]; then app=windows\ app
+elif [[ "$1" == 'saf' ]]; then app=safari
+elif [[ "$1" == 'term' ]]; then app=terminal
+elif [[ "$1" == 'vbox' ]]; then app=virtualbox
+elif [[ "$1" == 'vnc' ]]; then app=screen\ sharing
+  fi
+
+if [[ "$app" ]]; then shift ||:; open -a "$app" "$@"
+else app="$@"; open -a "$app"; exit; fi
