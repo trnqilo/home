@@ -1,0 +1,211 @@
+if [[ -f "$HOME/.profo" ]]; then source "$HOME/.profo"; fi
+export dothome="${dothome:-$HOME/.home}" holo="${holo:-$HOME/.local/home}"
+export homelib="${homelib:-$HOME/Library}" projects="${projects:-$HOME/Projects}" ctx="${ctx:-$holo/context}"
+export ANDROID_HOME="${ANDROID_HOME:-$homelib/android/sdk}"
+export ANDROID_SDK_ROOT="$ANDROID_HOME" ANDROID_NDK_HOME="$ANDROID_HOME/ndk" ANDROID_NDK_ROOT="$ANDROID_HOME/ndk"
+export SWIFT_HOME="$homelib/swift/usr" SDKMAN_DIR="$HOME/.sdkman"
+export GOPATH="${GOPATH:-$homelib/go}"
+export TERM=xterm-256color CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1
+
+function include { while [[ "$1" ]]; do if [[ -d "$1" ]]; then export PATH="$1:$PATH"; fi; shift; done; }
+function import { while [[ "$1" ]]; do if [[ -s "$1" ]]; then source "$1"; fi; shift; done; }
+function __init_home {
+  OS="${OSTYPE:-`uname -s | awk '{print tolower($1)}'`}"
+  if [[ "$OS" == 'darwin'* ]]; then export whereami='darwin'
+  elif [[ "$OS" == 'freebsd'* ]]; then export whereami='freebsd'
+  elif [[ "$OS" == *'android'* ]]; then export whereami='android'
+  elif [[ "$OS" == 'openbsd'* ]]; then export whereami='openbsd'
+  elif [[ "$OS" == 'netbsd'* ]]; then export whereami='netbsd'
+  elif [[ "$OS" == 'linux'* ]]; then export whereami='linux'
+  else export whereami='unknown'; fi
+
+  if (! test -f "$HOME/.local/bin/bat" && type batcat)&>/dev/null; then
+    bash -c 'mkdir -p "$HOME/.local/bin" && ln -s "`type -p batcat`" "$HOME/.local/bin/bat"'
+  fi
+
+  BIN="$dothome/bin"
+  BIN_OS="$BIN/os/$whereami" BIN_DEV="$BIN/dev" BIN_SH="$BIN/shell"
+  export PATH="$BIN/home:$BIN/home/key:$BIN/calc:$BIN/net:$BIN/os:$BIN/sys:$PATH"
+  export PATH="$BIN_SH:$BIN_SH/file:$BIN_SH/string:$BIN_SH/run:$PATH"
+  export PATH="$BIN_DEV:$BIN/app:$BIN_OS:$PATH"
+  unset BIN BIN_OS OS
+
+  include \
+    "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin" \
+    "$ANDROID_HOME/tools" "$ANDROID_HOME/tools/bin" "$ANDROID_HOME/platform-tools" \
+    "$homelib/dart-sdk/bin" "$homelib/python" "$homelib/kotlin-native/bin" "$GOPATH/bin" \
+    "$HOME/.cargo/bin" "$HOME/.pub-cache/bin" "$SWIFT_HOME/bin" "$homelib/flutter/bin" "$homelib/code/bin" \
+    "$holo/bin" "$HOME/.local/bin"
+
+  import "$dothome/lib/profile" "$holo/profile" "$holo/funcs" "$HOME/.local/profile" \
+    "$HOME/.cargo/env" "$SDKMAN_DIR/bin/sdkman-init.sh"
+
+  if [[ -d "$HOME/.local/profiles/" ]]; then import "$HOME/.local/profiles/"*; fi
+};__init_home
+
+function _shtyle_set { export PROMPT_ICON=${1:-'λ:'} PROMPT_COLOR=${2:-'white'} PROMPT_ACCENT=${3:-'white'} PROMPT_BODY=${4:-'default'}; }
+function shtyle { _shtyle_set $@; echo "$PROMPT_ICON" "$PROMPT_COLOR" "$PROMPT_ACCENT" "$PROMPT_BODY" > "$HOME/.shtyle"; }
+if [[ ! -f "$HOME/.shtyle" ]]; then shtyle
+else _shtyle_set `<"$HOME/.shtyle"`; fi
+
+function pro { [[ "$workspace" ]] || local workspace="$projects"
+  mkdir -p "$workspace" && cd "$workspace" || return 1
+  if [[ "$1" == '-' ]]; then pro $__pro_prev; return
+  else export __pro_prev=$__pro_repo; fi
+  if [[ "$1" == 'clone' && "$2" ]]; then local repo="$2"; shift 2
+    git clone "$repo" $@ || return 1; repo="${repo##*/}"; repo="${repo//.git/}"
+    [[ -d "$repo" ]] && cd "$repo"
+  else
+    if [[ "$1" =~ ^[0-9a-zA-Z]+'/'[0-9a-zA-z]+$ ]]; then
+      local depth=2 proj="$($awk -F/ '{print $1".*/.*"$2".*"}'<<<"$1")"
+    else local depth=1 proj="$1"; fi
+    local repo="`find . -maxdepth $depth -type d | grep "$proj" | head -1`"
+    if [[ ! -d "$repo" ]]; then echo "$1 not found."; return 1; fi
+    cd "$repo"; [[ "$2" ]] && shift && $@ .
+  fi
+  export __pro_repo=$repo
+}
+
+function ctx { mkdir -p "$ctx"; cd "$ctx"; ( if [[ "$1" ]]; then find . -type f | grep "$*" | if read context_doc; then echo "${context_doc//.\//}"; bat "$context_doc"; fi; fi ); }
+
+function holo { mkdir -p "$holo" || return 1; if [[  "$1" == 'pro' ]]; then shift; workspace="$holo" pro "$@"; else edi "$holo"; fi; }
+
+function adbdev {
+  if [[ "$1" ]]; then local device="`adbb ls | grep -iE "$1" | head -1`"
+    if [[ "$device" ]]; then export ANDROID_SERIAL="$device"
+    else echo "no matching device: $1"; fi
+  fi
+  echo "ANDROID_SERIAL=$ANDROID_SERIAL"
+}
+
+function pyvenv { local env="${1:-.venv}"
+  if [[ ! -d "$env" ]]; then $python -m venv "$env"; fi
+  source "$env/bin/activate"
+}
+
+if [[ -d "$HOME/.nvm"  && -s "$HOME/.nvm/nvm.sh" && -s "$HOME/.nvm/bash_completion" ]]; then
+  export NVM_DIR="$HOME/.nvm"; source "$NVM_DIR/nvm.sh" "$NVM_DIR/bash_completion"
+  function nodepath { export NODE_PATH="`type npm &>/dev/null && npm root -g ||:`"; }
+fi
+
+if [[ "$whereami" == 'android' ]]; then
+  export packages='build-essential python3 nodejs openjdk-21 which openssh screen bat proot-distro whois'
+  function proots { if [[ "$1" ]]; then proot-distro login "$@"; else proot-distro list; fi; }
+  alias fin='kill -15 -1'
+  alias devset='am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS'
+elif [[ "$whereami" == 'darwin' ]]; then
+  export packages='bash zsh coreutils gnu-sed watch bash-completion zsh-completion gpg qemu bat lolcat glow openssl screen brew-gem grep wakeonlan pngpaste golang'
+  export sed='gsed'
+  alias pax='"$dothome/bin/os/pax"'
+  alias wifireset='surely delete airport config && sudo rm /Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist'
+  alias paxapps='brew install --cask ghostty visual-studio-code windows-app jetbrains-toolbox' # slack discord iterm2 utm qmk/qmk/qmk homebrew/cask-drivers/qmk-toolbox
+  alias limaup='pax i colima lima lima-additional-guestagents'
+  alias diskstats='type smartctl &>/dev/null || brew install smartmontools; sudo smartctl -a /dev/disk0'
+  alias prefs='app "System Settings"' slk='app Slack' rdp='app "Windows App"' qmkt='app "QMK Toolbox"' screensave='app ScreenSaverEngine.app' mon='app mon'
+  alias fmy='open /System/Applications/FindMy.app' imsg='open /System/Applications/Messages.app'
+  alias simulatorwipe='fastlane snapshot reset_simulators'
+  alias xcodeinit='sudo xcode-select -s /Applications/Xcode.app/Contents/Developer'
+  alias smc='if uname -m | grep -q arm64; then echo cpu_power,gpu_power,thermal; else echo smc; fi | if read samplers; then sudo powermetrics --samplers $samplers; fi;'
+  alias rezkeys='sudo killall RFBEventHelperd' rezaudio='sudo pkill coreaudiod bluetoothd' rezvnc='sudo killall -HUP WindowServer; sudo launchctl kickstart -k system/com.apple.screensharing'
+  alias pngstr='pngpaste - | base64 -w 0 | $awk '\''{print "![image](data:image/png;base64,"$1")"}'\'' | pbcopy'
+  include /opt/homebrew/bin \
+    /opt/homebrew/opt/coreutils/libexec/gnubin /usr/local/opt/coreutils/libexec/gnubin /opt/homebrew/opt/gnu-sed/libexec/gnubin /opt/homebrew/opt/grep/libexec/gnubin \
+    /Applications/Docker.app/Contents/Resources/bin
+  alias fin='launchctl bootout user/`id -u $USER`'
+  alias lsb_release="grep -oE -m 1 'SOFTWARE LICENSE AGREEMENT FOR.*[A-Za-z]' '/System/Library/CoreServices/Setup Assistant.app/Contents/Resources/en.lproj/OSXSoftwareLicense.rtf' | \$awk -F 'macOS ' '{print \$NF}'"
+  function adduser { sudo sysadminctl -addUser $1 -password - -admin; }
+elif [[ "$whereami" == *'bsd' ]]; then
+  export packages='gnu-watch sudo coreutils date screen gsed hwstat' # drm-kmod xorg xrdp xfce
+  export sed='gsed'
+  alias lspci='sudo pciconf -l'
+  alias lsusb='sudo usbconfig'
+  alias fin='kill -15 -1'
+  alias sysrc='sudo /usr/sbin/sysrc'
+  alias reznet='sudo service netif restart && sudo service routing restart'
+  alias bsdclean='sudo rm -frv /usr/src/* /usr/obj/* /usr/lib/debug /usr/share/doc/*'
+elif [[ "$whereami" == 'linux' ]]; then
+  export packages='bash zsh build-essential gpg moc iftop bat lolcat glow screen'
+  alias paxapps='pax i qemu qemu-kvm ioquake3-server steam-installer lm-sensors blender gimp xfce4 blackbox blackbox-themes xterm clementine'
+  alias clamup='pax i clamav clamav-daemon; echo installed. run `parrot green "sudo freshclam; sudo clamscan -r /"`'
+  alias nogui='sudo systemctl set-default multi-user.target'
+  alias fin='kill -15 -1'
+fi
+
+function chhome { local HOME="`realpath "$@"`"; if [[ -d "$HOME" ]]; then cd "$HOME" && exec "$SHELL"; fi; }
+
+function why {
+  if [[ "$2" == 'fun' ]]; then
+    why "$1" | grep '^function ' | $awk '{print $2}'; return
+  elif [[ "$1" ]]; then local _command_="`command -v "$1" 2> /dev/null`"
+  else return; fi
+  if [[ "$_command_" == "$1" ]]; then echo -e "#!$SHELL\n## `type "$_command_"`" | $bat
+  elif is binary "$_command_"; then echo "$1 is a binary: $_command_" | $bat
+  elif is file "$_command_"; then echo -e "`$bat "$_command_"`\n\n##$_command_" | $bat
+  elif ! is empty "$_command_"; then echo -e "#!$SHELL\n$_command_" | $bat
+  else echo "$1 not found" | $bat; fi
+}
+
+function zzzz { nics off; zzz "$1"; surely sure reconnect && nics on; }
+
+alias md=glow # function md { fold -s "$*" | bat -l md; }
+
+if type bat &>/dev/null; then bat='bat'; else bat='cat'; fi; export bat
+
+if [[ ! -f "$HOME/.vimrc" ]]; then cp "$dothome/conf/vimrc" "$HOME/.vimrc"; fi
+
+export awk="${awk:-gawk}" sed="${sed:-sed}" python="${python:-python3}"; if ! type "$awk" &>/dev/null; then awk='awk'; fi
+export GREP_COLORS="ms=`ansi_esc=none ansicode bright,$PROMPT_COLOR`"
+export BAT_STYLE='grid,numbers' BAT_PAGER=''
+export GPG_TTY="`tty`"
+export EDITOR='vim' VISUAL="vim"
+
+alias ifwatch='sudo iftop -tNi'
+alias binsymbols='nm -gDC'
+alias fastbroot='sudo "$ANDROID_HOME/platform-tools/fastboot"'
+alias virtinit='pkg i virt-manager && sudo usermod -aG libvirt $USER'
+alias rad='./gradlew'
+alias mockitoinit='cd ./test && mkdir -p ./resources/mockito-extensions && echo mock-maker-inline > ./resources/mockito-extensions/org.mockito.plugins.MockMaker'
+alias emu='adbb emu'
+alias json='$python -m json.tool' jsonprint='json | bat --language javascript'
+alias cx='bot=codex bot' cc='bot=claude bot'
+
+alias rustupup="curl --proto '=https' --tlsv1.2 -sSf 'https://sh.rustup.rs' | sh;"
+alias sdkmanup='curl -s "https://get.sdkman.io" | bash;'
+alias nvmup='curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash;'
+alias lmsup='curl -fsSL https://lmstudio.ai/install.sh | bash;' lmsmodels='echo lms get qwen/qwen3-8b; lms get mistralai/devstral-small-2507;lms get google/gemma-3-1b;'
+alias codexup='npm install -g @openai/codex'
+alias claudeup='curl -fsSL https://claude.ai/install.sh | bash'
+alias opencodeup='brew install opencode'
+alias codegraphup='npm i -g @colbymchenry/codegraph && codegraph install'
+alias flutterup='surely "install flutter ${flutter_version:-stable}" && cd && \
+  rm -fr .pub-cache .flutter .flutter-devtools .dart .dartServer "$homelib/flutter" && \
+  cd "$homelib" && git clone https://github.com/flutter/flutter.git && cd flutter && \
+  git checkout "${flutter_version:-stable}" && bin/flutter doctor'
+alias fpg='flutter pub get;'
+alias fpup='flutter pub upgrade;'
+alias ftest='flutter test;'
+alias tf=terraform tfup='brew tap hashicorp/tap && brew install hashicorp/tap/terraform'
+
+alias mul='clac mul' add='clac add' sub='clac sub' div='clac div' avg='clac avg'
+
+alias qq='exit'
+alias iommus='for device in /sys/kernel/iommu_groups/*/devices/*; do group=${device#*/iommu_groups/*}; echo "group ${group%%/*} `lspci -nns ${device##*/}`"; done | gg "Group [[:digit:]]|Group [[:digit:]][[:digit:]]"'
+alias stresstest='stress -c "${cores:-"4"}" -i "${io:-"1"}" -m "${memory:-"1"}" -t "${time:-"60"}"'
+alias pax='"$dothome/bin/os/pax"'
+alias zon='web zon'
+
+alias up='homeup'
+alias home='edi "$dothome";'
+
+alias profo='touch "$HOME/.profo" && vim "$HOME/.profo" && source "$HOME/.profo"'
+alias prolo='mkdir -p "$HOME/.local" && touch "$HOME/.local/profile" && vim "$HOME/.local/profile" && source "$HOME/.local/profile"'
+alias proho='mkdir -p "$holo" && touch "$holo/profile" && vim "$holo/profile" && source "$holo/profile"'
+alias notes='holo; mkdir -p "$holo/doc"; edi "$holo/doc/notes.md"'
+alias ssh-keygen-ed='ssh-keygen -t ed25519'
+alias ssh-keygen-rsa='ssh-keygen -t rsa'
+alias ssh-regen='ssh-keygen -y -f'
+alias passgen='openssl passwd' # -1
+alias cloak='(tput civis; watch -tcn12345 echo; tput cnorm);'
+alias moc='mocp; surely sure stop server && mocp -x'
+alias won='nics on;'
+alias woff='nics off;'
