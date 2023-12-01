@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == 'init' ]]; then
+  # edi init red ffaaaa 880000
+  # edi init red ff2255 bb0005 770033 330011 110005
+  if [[ -f "$HOME/.edi" ]]; then source "$HOME/.edi"; fi
+  if [[ "$2" == 'clean' ]]; then shift; fg= bg_light= bg_mid= bg_dark= bg= theme_id=; fi
+
+  declare -A themes=(['sol']='Solarized Dark' ['dark']='Default Dark+' ['mono']='Monokai' ['dim']='Monokai Dimmed'
+                      ['kim']='Kimbie Dark' ['abyss']='Abyss' ['red']='Red' ['blue']='Tomorrow Night Blue')
+
+  if [[ -v themes[$2] ]]; then shift; theme_id=$1; fi
+  theme="${themes["${theme_id:-sol}"]}"
+
+  if [[ "$2" ]]; then shift; fg=$1; fi
+  if [[ "$2" ]]; then shift
+    bg_light=$1
+    bg_mid=${2:-`colorshade $bg_light 0.7`}
+    bg_dark=${3:-`colorshade $bg_light 0.4`}
+    bg=${4:-`colorshade $bg_light 0.2`}
+  fi
+
+  function init_json {
+    json="$(<"$DOTHOME/conf/code/$conf")"
+    if [[ "$conf" != 'settings.json' ]]; then return; fi
+    json="${json//Solarized Dark/$theme}"
+    json="${json//080029/${bg:-080029}}"
+    json="${json//130944/${bg_dark:-130944}}"
+    json="${json//271888/${bg_mid:-271888}}"
+    json="${json//6433dd/${bg_light:-6433dd}}"
+    json="${json//77e1d1/${fg:-77e1d1}}"
+  }
+
+  function write_conf {
+    while [[ "$1" ]]; do conf="${1}.json"; shift; init_json
+      home_conf_sha=`sha256sum <<< "$json" | $awk '{print $1}'`
+      local_conf_sha=`sha256sum "${confdir}/${conf}" | $awk '{print $1}'`
+      if [[ "$home_conf_sha" == "$local_conf_sha" ]]; then
+        parrot green "$conf"
+      else
+        echo "$json" > "$confdir/$conf"
+        parrot yellow "$conf"
+      fi
+    done
+  }
+
+  function write_edi_conf {
+    new_conf="fg='${fg}' bg_light='${bg_light}' bg_mid='${bg_mid}' bg_dark='${bg_dark}' bg='${bg}' theme_id='${theme_id}'"
+    if [[ -f "$HOME/.edi" ]]; then
+      new_conf_sha=`sha256sum <<< "$new_conf" | $awk '{print $1}'`
+      edi_conf_sha=`sha256sum "$HOME/.edi" | $awk '{print $1}'`
+      if [[ "$edi_conf_sha" == "$new_conf_sha" ]]; then return; fi
+    fi
+    echo "$new_conf" > "$HOME/.edi"
+  }
+
+  for editor in Code; do # Cursor
+    while read confdir; do
+      if [[ -d "$confdir" ]]; then echo $editor
+        write_conf settings keybindings
+      fi
+    done <<< "$HOME/.config/$editor - OSS/User
+              $HOME/.config/$editor/User
+              `cygpath "$APPDATA/$editor/User" 2>/dev/null`
+              $HOME/Library/Application Support/$editor/User"
+  done
+  write_edi_conf
+
+elif type "$edi" &>/dev/null; then $edi "$@"
+elif type code &>/dev/null; then code "$@"
+elif type code-oss &>/dev/null; then code-oss "$@"
+# elif type cursor &>/dev/null; then cursor "$@"
+elif type vim &>/dev/null; then vim "$@"; fi

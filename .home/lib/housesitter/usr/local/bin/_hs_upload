@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+echo "TODO"
+exit
+
+source /etc/default/housesitter
+dir=`date +"%m-%d-%y"`_`hostname`
+
+
+while [[ "$1" ]]; then
+  if [[ "$DESTINATION" ]]; then
+    scp "$1" "$DESTINATION/$dir"
+  else /usr/local/bin/_hs_dlq "$1"; fi
+  shift
+done
