@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -e
+
+function cache_file_expired { [[ ! "$age" ]] || (( $(stat -c %Y "$cache_file") <= $(date -d "$age ago" +%s) )); }
+
+function get_cache_dir { local url="$1"; url="${url#*/}"; url="${url%%[?#]*}"; url="${url#*/}"; echo "$curl_cache/$url"; }
+
+curl_cache="${CURLCACHE_DIR:-$HOME/.curlcache}"
+cache_file=`md5sum <<< "$@" | $awk '{print $1}'`
+
+url="$1"
+if [[ "$url" != *'://'* ]]; then url="https://$url"; fi
+shift && args="$@" || args=
+
+cache_dir="`get_cache_dir "$url"`"
+cache_file="$cache_dir/$cache_file"
+
+if [[ "$clobber" == true || ! -f "$cache_file" ]] || cache_file_expired; then
+  mkdir -p "$cache_dir"
+  curl_result="`curl -s $args $url ||:`"
+
+  if [[ "$curl_result" ]]; then
+    echo "# $url $args
+$curl_result" > "$cache_file"
+  else
+    find "$curl_cache" -type d -empty -delete
+    >&2 echo "failed to fetch $url"
+    exit 1
+  fi
+# else echo cache hit
+fi
+
+tail -n+2 "$cache_file"
