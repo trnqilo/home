@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+export command="${command:-$@}"
+
+if [[ ! "$_started" ]]; then
+  read -p "start '$command'... " && export _started=true
+fi
+
+trap stop INT && stop() { echo $'\nstopped.'
+  read -p "start '$command'..." __exit
+  [[ "$__exit" ]] && exit || exec forev
+}
+
+function pause {
+  if [[ ! "$sleep" ]]; then stop
+  else sleep $sleep; fi
+}
+
+while :; do $command; pause; done
