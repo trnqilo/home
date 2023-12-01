@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+function open_jbt {
+ ./JetBrains/Toolbox/bin/jetbrains-toolbox > /dev/null 2>&1 &
+}
+
+if whereami darwin; then open -a 'JetBrains Toolbox'
+elif whereami windows; then cd "$LOCALAPPDATA"; open_jbt
+else cd "$HOME/.local/share"; open_jbt; fi
