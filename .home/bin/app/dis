@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+if type discord &>/dev/null; then discord
+elif open -a Discord &>/dev/null; then :
+else open 'https://discord.com/channels/@me'; fi
