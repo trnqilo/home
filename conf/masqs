@@ -1,0 +1,17 @@
+no-resolv
+server=1.1.1.1
+addn-hosts=/etc/masqs/hosts
+addn-hosts=/etc/masqs/hosts.blocklist
+addn-hosts=/etc/masqs/hosts.guests
+
+## static
+# interface=
+# dhcp-range=192.168.123.1,192.168.123.1,0m
+
+## lease
+# interface=
+# dhcp-range=192.168.234.2,192.168.234.255,72h
+
+domain-needed
+bogus-priv
+dhcp-authoritative
