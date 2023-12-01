@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+[[ ! "$1" ]] && { echo 0; exit; }
+
+args="${*}"
+args=($args)
+
+expression="`value $1`"
+for (( index=1; index < ${#args[@]}; ++index )); do
+  expression+="-`value ${args[index]}`"
+done
+
+clac "$expression"

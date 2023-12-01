@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+[[ "$1" ]] && cd "$1"
+
+find . -type f | grep "\.m4a$" | \
+while IFS=$'\n' read -r m4a_file; do 
+  mp3_file="${m4a_file//'.m4a'/'.mp3'}"
+  if [[ "$mp3_file" == "$m4a_file" ]]; then echo "invalid m4a file: $m4a_file"
+  else
+    echo "ffmpeg -v 5 -y -i '$m4a_file' -acodec libmp3lame -ac 2 -ab 192k '$mp3_file'"
+  fi
+done

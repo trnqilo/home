@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+t=0 c=0
+threads=${threads:-`cpus`}
+chunks=${chunks:-1} chunk=
+pipe="${@:-cat}"
+
+while read line; do
+  if (( c == chunks )); then
+    $pipe <<< "$chunk" &
+    let ++t; c=0 chunk=
+    if (( t == threads )); then t=0; wait; fi
+  elif [[ "$line" ]]; then
+    [[ "$chunk" ]] && chunk+="
+$line" || chunk="$line"
+    let ++c
+  fi
+done
+
+wait

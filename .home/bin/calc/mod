@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+args="${*}"
+args=($args)
+
+result="`value $1`"
+for (( index = 1 ; index < ${#args[@]} ; ++index )); do
+  result+="%`value ${args[index]}`"
+done
+
+clac "$result"
