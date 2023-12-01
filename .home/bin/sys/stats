@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+echo "
+`mobo`
+
+`cpus` cpus
+
+`mems`
+
+`clocks`
+
+`temps`
+
+`batt`
+" | $sed '/^$/N;/^\n$/D'
