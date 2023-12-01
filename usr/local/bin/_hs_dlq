@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+
+mkdir /dev/shm/hs/dlq
+while [[ "$1" ]]; do
+  mv "$1" /dev/shm/hs/dlq
+  shift
+done
