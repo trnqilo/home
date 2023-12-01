@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" == '-q' ]]; then q=true; fi
+if [[ ! -t 0 ]]; then output="`cat`"
+else output="$@"; fi
+
+if whereami darwin; then pbcopy<<<"$output"
+elif whereami windows; then clip<<<"$output"
+elif whereami linux bsd && type xclip &>/dev/null; then
+  xclip<<<"$output"
+fi
+[[ "$q" ]] || echo "$output"
