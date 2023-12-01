@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" =~ ^o(pen)?$ ]]; then open=true; shift||:; fi
+if [[ "$1" ]]; then cd "$1"; fi
+port="${port:-${2:-1234}}"
+(( port < 1024 )) && sudo=sudo || sudo=
+echo serving `pwd`
+$sudo $python -m http.server $port &
+if [[ "$open" ]]; then sleep 4; open http://localhost:$port; fi
+wait

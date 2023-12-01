@@ -1,0 +1,16 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "defaultMode" : "auto",
+    "allowDangerouslySkipPermissions": true
+  },
+  "skipDangerousModePermissionPrompt": true
+}
+
+// "includeCoAuthoredBy": false,
+// "gitAttribution": false,
