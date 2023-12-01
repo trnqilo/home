@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+rm /dev/shm/hs/trip
+/usr/local/bin/_hs_message 'snooze...'

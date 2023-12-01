@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+uploader_script="$script_dir/dropbox_uploader.sh"
+config_file="$script_dir/.dropbox_uploader"
+
+if [ ! -f "$uploader_script" ]; then
+  echo "Error: dropbox_uploader.sh not found in $script_dir"
+  exit 1
+fi
+
+if [ ! -f "$config_file" ]; then
+  echo "Error: Config file not found at $config_file"
+  echo "Run '$uploader_script -f $config_file' to set it up."
+  exit 1
+fi
+
+if [[ "$1" == '--log' ]]; then target_label='log' keep_source=true; shift; fi
+if [ -z "$1" ]; then echo "nothing to upload"; exit 1; fi
+
+file_path="$1"
+if [ ! -f "$file_path" ]; then
+  echo "Error: File '$file_path' does not exist."
+  exit 1
+fi
+
+trip_stamp=${target_label:-$(< /dev/shm/hs/trip 2>/dev/null)}
+target_dir="/$(hostname -s)-${trip_stamp:-$(date +'%Y-%m-%d-%H%M')}"
+
+"$uploader_script" -f "$config_file" upload "$file_path" "$target_dir/" ||:
+if [[ "$keep_source" != true ]]; then rm "$file_path"; fi

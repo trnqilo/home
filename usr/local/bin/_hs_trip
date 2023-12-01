@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+trip_stamp=$(date +"%Y-%m-%d-%H%M")
+/usr/local/bin/_hs_message "TRIPPED $trip_stamp"
+
+mkdir /dev/shm/hs
+echo "$trip_stamp" > /dev/shm/hs/trip
+
+# /usr/local/bin/_hs_log "TRIPPED $trip_stamp"
