@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+function saywords {
+  while [[ "$1" ]]; do
+    if words | grep -iq "^${1//[^[:alpha:]]/}$"; then shift
+    elif grep -Eq '^[0-9]+$' <<< "$1"; then shift
+    else say try again; return; fi
+  done
+  say $input
+}
+
+function words {
+  echo "$words"
+}
+
+words="`base64 -d "$(dirname $0)/words" | gzip -dc`"
+if [[ "$1" == 'words' ]]; then words
+else
+while read -rep '' input; do
+  saywords $input
+done
+fi

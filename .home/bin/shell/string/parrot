@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ "$1" =~ ^err(or)?$ ]]; then shift; tostderr=true; fi
+if [[ "$1" ]]; then style="$1"; else exit; fi
+echo="${echo:-echo -e}"
+function parrot {
+  parrot="\e[0;`ansi_start='\e[' ansicode $style`${@}\e[0m"
+  if [[ "$tostderr" ]]; then >&2 $echo "$parrot"
+  else $echo "$parrot"; fi
+}
+if [[ "$2" ]]; then shift; parrot "$@"
+else
+  while IFS=$'\n' read line; do parrot "$line"; done
+fi

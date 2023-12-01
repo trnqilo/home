@@ -1,0 +1,11 @@
+{
+  "alwaysThinkingEnabled": true,
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "allowDangerouslySkipPermissions": true
+  },
+  "skipDangerousModePermissionPrompt": true
+}
