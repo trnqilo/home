@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+[[ "$1" ]] && subreddit="/r/$1" || subreddit=
+open "https://www.reddit.com/$subreddit"
